@@ -1,0 +1,4 @@
+# third-party screenshots: private visual reference only, never redistributed
+reference/img/
+qa/out/
+node_modules/

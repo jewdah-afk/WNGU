@@ -1,0 +1,12 @@
+{
+  "name": "genesis",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test qa/*.test.mjs",
+    "bench": "node qa/bench.mjs",
+    "shoot": "node qa/shoot.mjs",
+    "gen:luau": "node tools/gen-luau-content.mjs",
+    "serve": "npx http-server -p 8080 -c-1 ."
+  }
+}
