@@ -214,7 +214,8 @@ function pattern(p, x, n, phase, seed) {
       return nearEdge && zRow ? 2 : 0;
     }
     case "panel": {
-      // recessed seams every half tile on side faces, bevel on top edges
+      // recessed seams every half tile on side faces, bevel on top edges (boxes only)
+      if (!p.min) return 0;
       if (Math.abs(n[2]) > 0.5) {
         const e = Math.min(x[0] - p.min[0], p.max[0] - x[0], x[1] - p.min[1], p.max[1] - x[1]);
         return e < 0.05 ? 1 : 0;
@@ -234,7 +235,8 @@ function pattern(p, x, n, phase, seed) {
       return k < 0.5 ? -1 : 0;
     }
     case "screw": {
-      // helical auger: stripes along the axis that slide with phase
+      // helical auger: stripes along the axis that slide with phase (round parts only)
+      if (p.kind === 0 || p.kind === 3) return 0;
       const k = frac(x[p.axis] * 5 + (angleAt(p, x)) / (Math.PI * 2) + phase);
       return k < 0.45 ? -2 : 0;
     }

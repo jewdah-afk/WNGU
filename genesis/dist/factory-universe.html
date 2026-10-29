@@ -1,0 +1,2420 @@
+<title>Factory Universe</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0e1116; --panel: #161b22e8; --panel-solid: #161b22; --line: #2b3340; --line-hi: #3d4757;
+    --text: #e6e9ee; --muted: #8b95a5; --amber: #f2b441; --amber-dim: #8a6420; --good: #6ed28a; --warn: #f2b441; --bad: #ef5b5b; --cyan: #5fd3e6;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font: 12px/1.4 var(--mono); user-select: none; }
+  canvas#view { position: fixed; inset: 0; width: 100vw; height: 100vh; image-rendering: pixelated; cursor: crosshair; touch-action: none; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 6px 24px #0008; backdrop-filter: blur(4px); }
+  .eyebrow { font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+  img.px { image-rendering: pixelated; }
+
+  #top { position: fixed; top: 10px; left: 10px; right: 10px; display: flex; gap: 10px; align-items: stretch; pointer-events: none; }
+  #top > * { pointer-events: auto; }
+  #brand { padding: 8px 12px; display: flex; flex-direction: column; justify-content: center; }
+  #brand b { font-size: 14px; letter-spacing: .14em; color: var(--amber); }
+  #stock { flex: 1; display: flex; flex-wrap: wrap; gap: 2px 12px; padding: 7px 12px; align-content: center; min-width: 0; }
+  .res { display: flex; align-items: center; gap: 5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .res img { height: 22px; width: auto; }
+  .res .n { font-size: 13px; }
+  .res .r { font-size: 10px; color: var(--good); }
+  #power, #research-mini { padding: 7px 12px; width: 190px; display: flex; flex-direction: column; gap: 4px; justify-content: center; cursor: default; }
+  #research-mini { cursor: pointer; }
+  .bar { height: 7px; background: #0a0d12; border: 1px solid var(--line); border-radius: 3px; overflow: hidden; }
+  .bar > i { display: block; height: 100%; background: var(--good); width: 0; transition: width .2s; }
+  .row { display: flex; justify-content: space-between; gap: 8px; }
+
+  #toolbar { position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; padding: 6px; max-width: calc(100vw - 20px); overflow-x: auto; }
+  .tool { position: relative; width: 66px; height: 70px; border: 1px solid var(--line); border-radius: 5px; background: #0d1117; color: var(--text); font: inherit; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding: 3px 2px 4px; flex: none; }
+  .tool img { position: absolute; top: 3px; left: 50%; transform: translateX(-50%); max-width: 60px; max-height: 44px; }
+  .tool .k { position: absolute; top: 2px; left: 4px; font-size: 10px; color: var(--muted); }
+  .tool .big { position: absolute; top: 4px; left: 50%; transform: translateX(-50%); font-size: 28px; line-height: 1; color: var(--bad); }
+  .tool .nm { font-size: 9.5px; letter-spacing: .04em; text-align: center; line-height: 1.1; }
+  .tool:hover { border-color: var(--line-hi); }
+  .tool.on { border-color: var(--amber); box-shadow: inset 0 0 0 1px var(--amber); }
+  .tool.locked { opacity: .35; }
+  .tool.poor .nm { color: var(--bad); }
+  #speed { display: flex; flex-direction: column; gap: 3px; justify-content: center; padding-left: 4px; }
+  #speed button { font: inherit; font-size: 10px; background: #0d1117; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; cursor: pointer; }
+  #speed button.on { color: var(--amber); border-color: var(--amber-dim); }
+
+  #inspect { position: fixed; right: 10px; top: 76px; width: 260px; padding: 12px; display: none; }
+  #inspect h3 { margin: 0 0 2px; font-size: 14px; color: var(--amber); letter-spacing: .06em; }
+  #inspect .st { margin: 2px 0 10px; font-size: 11px; }
+  #inspect .buf { display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0; }
+  #inspect .chip { display: flex; align-items: center; gap: 4px; background: #0d1117; border: 1px solid var(--line); border-radius: 4px; padding: 2px 6px 2px 3px; }
+  #inspect .chip img { height: 20px; width: auto; }
+  #inspect .recipes { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 6px; }
+  .btn { font: inherit; font-size: 11px; background: #0d1117; color: var(--text); border: 1px solid var(--line); border-radius: 4px; padding: 5px 7px; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 5px; }
+  .btn:hover { border-color: var(--line-hi); }
+  .btn.on { border-color: var(--amber); color: var(--amber); }
+  .btn[disabled] { opacity: .35; cursor: default; }
+  .btn img { height: 18px; width: auto; }
+
+  #techs { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(620px, calc(100vw - 20px)); max-height: calc(100vh - 180px); overflow-y: auto; padding: 16px; display: none; }
+  #techs h2 { margin: 0 0 4px; font-size: 16px; color: var(--amber); letter-spacing: .1em; }
+  .tech { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 10px 12px; margin-top: 8px; border: 1px solid var(--line); border-radius: 5px; background: #0d1117; cursor: pointer; }
+  .tech:hover { border-color: var(--line-hi); }
+  .tech.on { border-color: var(--amber); }
+  .tech.done, .tech.locked { cursor: default; opacity: .45; }
+  .tech .nm { font-size: 13px; }
+  .tech .lv { color: var(--cyan); }
+  .tech .ef { color: var(--muted); font-size: 11px; grid-column: 1 / -1; }
+  .tech .cost { display: flex; gap: 4px; align-items: center; }
+  .tech .cost img { height: 18px; width: auto; }
+
+  #toasts { position: fixed; bottom: 96px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 5px; pointer-events: none; }
+  .toast { padding: 7px 14px; border-radius: 5px; background: var(--panel-solid); border: 1px solid var(--line); animation: fade 3.2s forwards; }
+  .toast.good { border-color: #2f6b45; color: var(--good); } .toast.bad { border-color: #7a3030; color: var(--bad); }
+  @keyframes fade { 0%{opacity:0;transform:translateY(6px)} 8%{opacity:1;transform:none} 80%{opacity:1} 100%{opacity:0} }
+
+  #tip { position: fixed; pointer-events: none; padding: 6px 9px; font-size: 11px; display: none; max-width: 260px; z-index: 5; }
+  #help { position: fixed; left: 10px; bottom: 10px; padding: 10px 12px; width: 236px; font-size: 11px; color: var(--muted); }
+  #help b { color: var(--text); font-weight: 600; }
+  #help .short-help { display: none; }
+  @media (max-width: 900px) { #help .short-help { display: block; margin-bottom: 8px; } }
+  #help .x { float: right; cursor: pointer; color: var(--muted); }
+  #loading { position: fixed; inset: 0; display: grid; place-items: center; background: var(--bg); z-index: 10; font-size: 13px; letter-spacing: .2em; color: var(--amber); }
+  @media (max-width: 900px) {
+    #top { flex-wrap: wrap; gap: 6px; }
+    #stock { flex-basis: 100%; order: 3; padding: 5px 10px; }
+    .res .r { display: none; }
+    #power, #research-mini { flex: 1; width: auto; padding: 6px 10px; }
+    #help { width: auto; right: 10px; bottom: 96px; font-size: 10.5px; }
+    #help .long { display: none; }
+    #inspect { top: auto; bottom: 96px; right: 10px; left: 10px; width: auto; max-height: 45vh; overflow-y: auto; } #power, #research-mini { width: 140px; } #brand { display: none; } }
+</style>
+<canvas id="view"></canvas>
+<div id="top">
+  <div id="brand" class="panel"><b>FACTORY UNIVERSE</b><span class="eyebrow" id="clock">sector 01</span></div>
+  <div id="stock" class="panel"></div>
+  <div id="power" class="panel" title="Power network: supply vs demand. Machines slow down proportionally below 100%.">
+    <div class="row"><span class="eyebrow">Power</span><span id="pw-txt">-</span></div>
+    <div class="bar"><i id="pw-bar"></i></div>
+  </div>
+  <div id="research-mini" class="panel" title="Research (T)">
+    <div class="row"><span class="eyebrow">Research</span><span id="rs-txt">none</span></div>
+    <div class="bar"><i id="rs-bar" style="background:var(--cyan)"></i></div>
+  </div>
+</div>
+<div id="inspect" class="panel"></div>
+<div id="techs" class="panel"></div>
+<div id="toolbar" class="panel"></div>
+<div id="toasts"></div>
+<div id="tip" class="panel"></div>
+<div id="help" class="panel">
+  <span class="x" id="help-x">&times;</span>
+  <div class="long"><b>Build</b> 1-8 &middot; click / drag belts<br>
+  <b>Rotate</b> R &middot; <b>Remove</b> right-click or X<br>
+  <b>Pan</b> WASD / middle-drag &middot; <b>Zoom</b> wheel<br>
+  <b>Inspect</b> Esc then click &middot; <b>Research</b> T<br><br>
+  Drills on ore &rarr; smelters &rarr; belts into the <b>Core Hub</b>. Everything you build is paid from the hub. Poles carry power from the hub and generators.<br><br></div>
+  <span class="short-help">Tap a building below, then tap the map. Drag with no tool to pan.</span>
+  <button class="btn" id="bot-go" style="width:100%;justify-content:center;margin-top:0">Let the playtest bot build</button>
+</div>
+<div id="loading">BAKING SPRITES&hellip;</div>
+<script type="module">
+const __defs = new Map(), __cache = new Map();
+function __def(k, f) { __defs.set(k, f); }
+function __req(k) { if (!__cache.has(k)) { if (!__defs.has(k)) throw new Error("bundle: missing " + k); __cache.set(k, {}); __cache.set(k, __defs.get(k)()); } return __cache.get(k); }
+__def("main.js", function () {
+// Factory Universe — browser client. The sim is authoritative; this file only
+// presents it: sprite baking, drawing, input, HUD, VFX and SFX.
+const C = __req("content.js");
+const S = __req("../../engine/sim/factory.js");
+const { bake, scaleGenome, RAMPS } = __req("../../engine/pixel/raster.js");
+const { GENOMES, ITEM_GENOMES, TILE_GENOMES, oreGenome } = __req("art.js");
+const { Sfx } = __req("sfx.js");
+
+const $ = id => document.getElementById(id);
+const params = new URLSearchParams(location.search);
+const SEED = +(params.get("seed") || 1);
+const SAVE_KEY = "fu.save.v1." + SEED;
+
+// ---------------- state ----------------
+let st;
+try {
+  const saved = params.has("fresh") || params.has("bot") ? null : localStorage.getItem(SAVE_KEY);
+  st = saved ? S.deserialize(C, saved) : S.createWorld(C, { seed: SEED });
+} catch (e) { st = S.createWorld(C, { seed: SEED }); }
+
+const view = $("view"), vctx = view.getContext("2d");
+const low = document.createElement("canvas"), lctx = low.getContext("2d");
+const cam = { x: 0, y: 0, zoom: 3 };
+const ui = { tool: null, dir: 0, hover: null, selected: null, drag: null, pan: null, speed: 1, paused: false, showTechs: false };
+const fx = { parts: [], beams: [], rings: [] };
+const anim = new Map(); // entity id -> animation phase
+const perf = { frames: 0, fps: 0, last: performance.now(), frameMs: 0, simMs: 0, draws: 0, bakeMs: 0, bakes: 0 };
+const sfx = new Sfx();
+
+// ---------------- sprite cache ----------------
+const sprites = new Map();
+function toCanvas(b) {
+  const c = document.createElement("canvas"); c.width = b.w; c.height = b.h;
+  c.getContext("2d").putImageData(new ImageData(b.rgba, b.w, b.h), 0, 0);
+  return { c, ox: b.ox, oy: b.oy, w: b.w, h: b.h };
+}
+function sprite(key, make) {
+  let s = sprites.get(key);
+  if (!s) { const t0 = performance.now(); s = toCanvas(make()); perf.bakeMs += performance.now() - t0; perf.bakes++; sprites.set(key, s); }
+  return s;
+}
+const FRAMES = 8, BELT_FRAMES = 16;
+const machineSprite = (type, dir, active, f) => sprite(`${type}:${dir}:${active ? f : "off"}`, () =>
+  bake(GENOMES[type], { dir: type === "hub" ? 0 : dir, active, phase: active ? f / FRAMES : 0 }));
+const beltSprite = (dir, f) => sprite(`belt:${dir}:${f}`, () => bake(GENOMES.belt, { dir, phase: f / BELT_FRAMES, groundShadow: false }));
+const ITEM_SCALE = 1.9;
+const itemSprite = item => sprite(`item:${item}`, () => bake(scaleGenome(ITEM_GENOMES[item], ITEM_SCALE), { groundShadow: false, shadows: false }));
+const itemIcon = item => sprite(`icon:${item}`, () => bake(scaleGenome(ITEM_GENOMES[item], 2.6), { groundShadow: false, shadows: false }));
+const ORE_MATS = ["", "ore_iron", "ore_copper", "ore_coal", "ore_stone"];
+
+// ---------------- terrain ----------------
+const ORIGIN = { x: st.H * 16 + 24, y: 48 };
+const terrain = document.createElement("canvas");
+terrain.width = (st.W + st.H) * 16 + 48; terrain.height = (st.W + st.H) * 8 + 96;
+const tctx = terrain.getContext("2d");
+const tileKind = i => { const t = st.terrain[i]; return t === S.T_WATER ? "water" : t === S.T_SAND ? "sand" : t === S.T_ROCK ? "rock" : "grass"; };
+function tileSprite(x, y, phaseFrame = 0) {
+  const i = y * st.W + x, k = tileKind(i);
+  const v = (x * 7 + y * 13) % 4;
+  if (k === "grass") { const g = S.fbm(x * 1.7, y * 1.7, 77) > 0.5 ? "grass2" : "grass"; return sprite(`t:${g}:${v}`, () => bake(TILE_GENOMES[g], { groundShadow: false, outline: false, seed: v + 1 })); }
+  if (k === "water") return sprite(`t:water:${phaseFrame}`, () => bake(TILE_GENOMES.water, { groundShadow: false, outline: false, phase: phaseFrame / 4 }));
+  return sprite(`t:${k}:${v % 2}`, () => bake(TILE_GENOMES[k], { groundShadow: false, outline: k === "rock", seed: v + 1 }));
+}
+function drawTerrain() {
+  tctx.clearRect(0, 0, terrain.width, terrain.height);
+  for (let d = 0; d < st.W + st.H - 1; d++) for (let x = Math.max(0, d - st.H + 1); x <= Math.min(d, st.W - 1); x++) {
+    const y = d - x, s = tileSprite(x, y);
+    const [sx, sy] = [(x - y) * 16 + ORIGIN.x, (x + y) * 8 + ORIGIN.y];
+    tctx.drawImage(s.c, sx - s.ox, sy - s.oy);
+    const o = st.ore[y * st.W + x];
+    if (o) { const os = sprite(`ore:${o}:${(x * 3 + y * 5) % 3}`, () => bake(oreGenome(ORE_MATS[o], (x * 3 + y * 5) % 3 + 1))); tctx.drawImage(os.c, sx - os.ox, sy - os.oy); }
+  }
+}
+
+// ---------------- coordinates ----------------
+const toScreen = (x, y, z = 0) => [(x - y) * 16 + ORIGIN.x, (x + y) * 8 - z * 16 + ORIGIN.y];
+function lowSize() { return [Math.ceil(innerWidth / cam.zoom), Math.ceil(innerHeight / cam.zoom)]; }
+function screenToWorld(mx, my) {
+  const [lw, lh] = lowSize();
+  const px = mx / cam.zoom + cam.x - lw / 2 - ORIGIN.x, py = my / cam.zoom + cam.y - lh / 2 - ORIGIN.y;
+  return [(px / 16 + py / 8) / 2, (py / 8 - px / 16) / 2];
+}
+function centreOn(tx, ty) { const [sx, sy] = toScreen(tx, ty); cam.x = sx; cam.y = sy; }
+
+// ---------------- VFX ----------------
+// Particles live in terrain-pixel space; every emitter is driven by sim state.
+function puff(x, y, z, kind) {
+  const [sx, sy] = toScreen(x, y, z);
+  const P = {
+    smoke: { vx: (Math.random() - 0.3) * 4, vy: -9 - Math.random() * 5, life: 2.4, r0: 1.5, r1: 5, col: [120, 122, 130], a: 0.55 },
+    soot:  { vx: (Math.random() - 0.3) * 4, vy: -11 - Math.random() * 5, life: 2.0, r0: 1.5, r1: 4.5, col: [52, 50, 58], a: 0.7 },
+    spark: { vx: (Math.random() - 0.5) * 40, vy: -25 - Math.random() * 25, life: 0.45, r0: 0.6, r1: 0.6, col: [255, 214, 120], a: 1, g: 90 },
+    dust:  { vx: (Math.random() - 0.5) * 14, vy: -6 - Math.random() * 6, life: 0.8, r0: 1, r1: 2, col: [150, 130, 100], a: 0.7, g: 12 },
+    ember: { vx: (Math.random() - 0.5) * 6, vy: -16 - Math.random() * 6, life: 1.0, r0: 0.6, r1: 0.6, col: [255, 150, 60], a: 1 },
+  }[kind];
+  fx.parts.push({ x: sx, y: sy, t: 0, ...P });
+}
+const BAYER4 = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+function drawParticles(ctx, dt, ox, oy) {
+  const keep = [];
+  for (const p of fx.parts) {
+    p.t += dt; if (p.t >= p.life) continue;
+    p.x += p.vx * dt; p.y += p.vy * dt; if (p.g) p.vy += p.g * dt; p.vx *= 0.985;
+    keep.push(p);
+    const k = p.t / p.life, r = p.r0 + (p.r1 - p.r0) * k, a = p.a * (1 - k);
+    const cx = Math.round(p.x - ox), cy = Math.round(p.y - oy);
+    ctx.fillStyle = `rgb(${p.col[0]},${p.col[1]},${p.col[2]})`;
+    if (r < 1) { ctx.globalAlpha = a; ctx.fillRect(cx, cy, 1, 1); continue; }
+    // dithered pixel disc: coverage thresholded against a Bayer matrix keeps it crisp
+    const R = Math.ceil(r);
+    ctx.globalAlpha = 1;
+    for (let yy = -R; yy <= R; yy++) for (let xx = -R; xx <= R; xx++) {
+      if (xx * xx + yy * yy > r * r) continue;
+      if (a * 16 < BAYER4[((cy + yy) & 3) * 4 + ((cx + xx) & 3)] + 0.5) continue;
+      ctx.fillRect(cx + xx, cy + yy, 1, 1);
+    }
+  }
+  ctx.globalAlpha = 1;
+  fx.parts = keep.length > 2500 ? keep.slice(-2500) : keep;
+}
+
+// ---------------- simulation clock ----------------
+let acc = 0, lastT = performance.now(), saveT = 0;
+const deliveredWindow = []; // [tick, snapshot] for per-minute rates
+
+function handleEvents() {
+  for (const ev of st.events) {
+    if (ev.k === "build") sfx.play("build", panOf(ev.x, ev.y));
+    else if (ev.k === "remove") sfx.play("remove", panOf(ev.x, ev.y));
+    else if (ev.k === "craft") {
+      const e = st.ents.get(ev.id);
+      if (e && onScreen(e)) {
+        sfx.play(e.type === "smelter" ? "smelt" : "craft", panOf(e.x, e.y));
+        if (e.type === "assembler") for (let i = 0; i < 6; i++) puff(e.x + 1, e.y + 1, 1.4, "spark");
+      }
+    } else if (ev.k === "burn") {
+      const e = st.ents.get(ev.id);
+      if (e) for (let i = 0; i < 4; i++) puff(e.x + 1.55, e.y + 1.5, 2.3, "soot");
+    } else if (ev.k === "research") {
+      sfx.play("research");
+      toast(`${C.TECHS[ev.tech].name} ${C.TECHS[ev.tech].max === 1 ? "unlocked" : "level " + ev.level}`, "good");
+      fx.rings.push({ t: 0 });
+      buildToolbar();
+    }
+  }
+  st.events.length = 0;
+}
+
+function simulate(now) {
+  const dt = Math.min(0.25, (now - lastT) / 1000); lastT = now;
+  if (ui.paused) return 0;
+  acc += dt * ui.speed;
+  const t0 = performance.now();
+  let n = 0;
+  while (acc >= 1 / 60 && n < 600) { S.step(st); handleEvents(); acc -= 1 / 60; n++; }
+  perf.simMs = performance.now() - t0;
+  if (st.tick % 60 === 0 || n > 0) {
+    if (!deliveredWindow.length || st.tick - deliveredWindow[deliveredWindow.length - 1][0] >= 60) deliveredWindow.push([st.tick, { ...st.delivered }]);
+    while (deliveredWindow.length > 61) deliveredWindow.shift();
+  }
+  if (now - saveT > 20000) { saveT = now; try { localStorage.setItem(SAVE_KEY, S.serialize(st)); } catch (e) {} }
+  return dt;
+}
+
+// ---------------- rendering ----------------
+function onScreen(e) {
+  const [lw, lh] = lowSize(); const [sx, sy] = toScreen(e.x + e.size / 2, e.y + e.size / 2);
+  return Math.abs(sx - cam.x) < lw / 2 + 64 && Math.abs(sy - cam.y) < lh / 2 + 96;
+}
+function panOf(x, y) { const [lw] = lowSize(); const [sx] = toScreen(x, y); return Math.max(-1, Math.min(1, (sx - cam.x) / (lw / 2))); }
+
+function netOf(e) { return e.net !== undefined && e.net >= 0 ? st.power.nets[e.net] : null; }
+
+function draw(dt) {
+  const t0 = performance.now();
+  const [lw, lh] = lowSize();
+  if (low.width !== lw || low.height !== lh) { low.width = lw; low.height = lh; }
+  if (view.width !== innerWidth || view.height !== innerHeight) { view.width = innerWidth; view.height = innerHeight; }
+  const ox = Math.round(cam.x - lw / 2), oy = Math.round(cam.y - lh / 2);
+  const g = lctx;
+  g.imageSmoothingEnabled = false;
+  g.fillStyle = "#0b0e13"; g.fillRect(0, 0, lw, lh);
+  g.drawImage(terrain, -ox, -oy);
+  let draws = 1;
+
+  // animated water, only on screen
+  const wf = Math.floor(performance.now() / 260) % 4;
+  for (let y = 0; y < st.H; y++) for (let x = 0; x < st.W; x++) {
+    if (st.terrain[y * st.W + x] !== S.T_WATER) continue;
+    const [sx, sy] = toScreen(x, y);
+    if (sx - ox < -40 || sx - ox > lw + 40 || sy - oy < -30 || sy - oy > lh + 30) continue;
+    const s = tileSprite(x, y, wf); g.drawImage(s.c, sx - s.ox - ox, sy - s.oy - oy); draws++;
+  }
+
+  // power coverage overlay while placing power-related things
+  if (ui.tool === "pole" || (ui.tool && C.BUILDINGS[ui.tool] && C.BUILDINGS[ui.tool].power)) {
+    g.globalAlpha = 0.16; g.fillStyle = "#5fd3e6";
+    const sup = C.BUILDINGS.pole.supply;
+    for (const id of st.order) {
+      const e = st.ents.get(id);
+      if (e.type !== "pole" && e.type !== "hub") continue;
+      const cx = e.type === "hub" ? e.x + 1 : e.x, cy = e.type === "hub" ? e.y + 1 : e.y;
+      diamond(g, cx - sup, cy - sup, 2 * sup + 1, ox, oy, true);
+    }
+    g.globalAlpha = 1;
+  }
+
+  // entities in isometric depth order
+  const list = [];
+  for (const id of st.order) { const e = st.ents.get(id); if (onScreen(e)) list.push(e); }
+  list.sort((a, b) => (a.x + a.y + 2 * a.size) - (b.x + b.y + 2 * b.size) || b.size - a.size || a.x - b.x);
+  const bspeed = S.beltSpeed(st);
+  const beltFrame = Math.floor(((st.tick * bspeed) % 256) / 256 * BELT_FRAMES) % BELT_FRAMES;
+  for (const e of list) {
+    const [sx, sy] = toScreen(e.x, e.y);
+    if (e.type === "belt") {
+      const s = beltSprite(e.dir, e.items.length && !ui.paused ? beltFrame : beltFrame);
+      g.drawImage(s.c, sx - s.ox - ox, sy - s.oy - oy); draws++;
+      for (const it of e.items) {
+        const f = it.pos / 256 - 0.5;
+        const [ix, iy] = toScreen(e.x + 0.5 + S.DX[e.dir] * f, e.y + 0.5 + S.DY[e.dir] * f, 0.2);
+        const is = itemSprite(it.item); g.drawImage(is.c, Math.round(ix - is.ox - ox), Math.round(iy - is.oy - oy)); draws++;
+      }
+      continue;
+    }
+    const net = netOf(e);
+    const powered = e.type === "pole" || e.type === "hub" || e.type === "generator" || e.type === "solar" || (net && net.sat > 0);
+    let ph = anim.get(e.id) || 0;
+    const rate = e.type === "hub" ? 0.35 : e.type === "drill" ? 1.2 : e.type === "generator" ? (e.load > 0 ? 0.4 + e.load / 600 : 0) : 0.7;
+    const working = e.type === "hub" || e.working;
+    if (working && !ui.paused) ph = (ph + dt * ui.speed * rate * (net ? net.sat / 1000 : 1)) % 1;
+    anim.set(e.id, ph);
+    const active = (working || e.type === "hub") && e.type !== "pole";
+    const s = e.type === "pole" ? machineSprite("pole", 0, false, 0) : machineSprite(e.type, e.dir, active, Math.floor(ph * FRAMES) % FRAMES);
+    g.drawImage(s.c, sx - s.ox - ox, sy - s.oy - oy); draws++;
+    if (!powered && C.BUILDINGS[e.type].power) icon(g, e, "power", ox, oy);
+    else if (net && net.sat < 1000 && C.BUILDINGS[e.type].power && Math.floor(performance.now() / 500) % 2) icon(g, e, "brown", ox, oy);
+    // emitters: real state only
+    if (e.working && !ui.paused && Math.random() < dt * ui.speed * 3) {
+      if (e.type === "smelter") puff(e.x + (e.dir % 2 ? 1.4 : 0.6), e.y + (e.dir === 1 || e.dir === 2 ? 1.4 : 0.6), 2.6, Math.random() < 0.15 ? "ember" : "smoke");
+      if (e.type === "drill") puff(e.x + 0.85 + Math.random() * 0.3, e.y + 1 + Math.random() * 0.3, 0.3, "dust");
+      if (e.type === "generator") puff(e.x + 1.55, e.y + 1.5, 2.3, "smoke");
+    }
+  }
+
+  // pole wires: minimum spanning tree over each network, drawn above entities
+  g.strokeStyle = "#c8743a"; g.lineWidth = 1;
+  for (const [a, b] of wireEdges()) {
+    const za = a.hub ? 2.9 : 1.82, zb = b.hub ? 2.9 : 1.82;
+    const [ax, ay] = toScreen(a.x + 0.5, a.y + 0.5, za), [bx, by] = toScreen(b.x + 0.5, b.y + 0.5, zb);
+    if (Math.max(ax, bx) - ox < -20 || Math.min(ax, bx) - ox > lw + 20) continue;
+    wire(g, ax - ox, ay - oy, bx - ox, by - oy);
+  }
+
+  // hub beam pulses with recent deliveries; research completion ring
+  const hub = st.ents.get(1);
+  if (hub) {
+    const [hx, hy] = toScreen(hub.x + 1.5, hub.y + 1.5, 2.95);
+    const rate = deliveredRate();
+    const h = 40 + Math.min(120, rate * 2);
+    const pulse = 0.18 + 0.1 * Math.sin(performance.now() / 180);
+    for (let k = 0; k < 3; k++) { g.globalAlpha = pulse * (1 - k * 0.28); g.fillStyle = k ? "#5fd3e6" : "#c8f6ff"; g.fillRect(Math.round(hx - ox) - 2 - k * 2, Math.round(hy - oy - h), 4 + k * 4, h); }
+    for (const r of fx.rings) {
+      r.t += dt; const k = r.t / 1.6; if (k > 1) continue;
+      g.globalAlpha = 1 - k; g.strokeStyle = "#5fd3e6";
+      g.beginPath(); g.ellipse(Math.round(hx - ox), Math.round(hy - oy + 30), 20 + k * 160, (20 + k * 160) / 2, 0, 0, Math.PI * 2); g.stroke();
+    }
+    fx.rings = fx.rings.filter(r => r.t < 1.6);
+    g.globalAlpha = 1;
+  }
+
+  drawParticles(g, ui.paused ? 0 : dt * ui.speed, ox, oy);
+
+  // placement ghost
+  if (ui.tool === "remove" && ui.hover) {
+    const e = S.entAt(st, Math.floor(ui.hover[0]), Math.floor(ui.hover[1]));
+    if (e && e.type !== "hub") { g.globalAlpha = 0.4; g.fillStyle = "#ef5b5b"; diamond(g, e.x, e.y, e.size, ox, oy, true); g.globalAlpha = 1; }
+  } else if (ui.tool && ui.hover) {
+    const s = C.BUILDINGS[ui.tool].size;
+    const [tx, ty] = ghostTile();
+    const why = S.canBuild(st, ui.tool, tx, ty);
+    g.globalAlpha = 0.6;
+    const spr = ui.tool === "belt" ? beltSprite(ui.dir, 0) : machineSprite(ui.tool, ui.dir, false, 0);
+    const [sx, sy] = toScreen(tx, ty);
+    g.drawImage(spr.c, sx - spr.ox - ox, sy - spr.oy - oy);
+    g.globalAlpha = 0.35; g.fillStyle = why ? "#ef5b5b" : "#6ed28a";
+    diamond(g, tx, ty, s, ox, oy, true);
+    g.globalAlpha = 1;
+    // output arrow
+    if (ui.tool !== "pole" && ui.tool !== "lab" && ui.tool !== "solar") {
+      const [ax, ay] = toScreen(tx + s / 2 + S.DX[ui.dir] * (s / 2 + 0.35), ty + s / 2 + S.DY[ui.dir] * (s / 2 + 0.35), 0.1);
+      g.fillStyle = "#f2b441"; g.fillRect(Math.round(ax - ox) - 1, Math.round(ay - oy) - 1, 3, 3);
+    }
+  } else if (ui.hover && !ui.tool) {
+    const e = S.entAt(st, Math.floor(ui.hover[0]), Math.floor(ui.hover[1]));
+    if (e) { g.globalAlpha = 0.22; g.fillStyle = "#f2b441"; diamond(g, e.x, e.y, e.size, ox, oy, true); g.globalAlpha = 1; }
+  }
+  if (ui.selected && st.ents.has(ui.selected)) {
+    const e = st.ents.get(ui.selected);
+    g.strokeStyle = "#f2b441"; diamond(g, e.x, e.y, e.size, ox, oy, false);
+  }
+
+  vctx.imageSmoothingEnabled = false;
+  vctx.drawImage(low, 0, 0, lw * cam.zoom, lh * cam.zoom);
+  perf.draws = draws;
+  perf.frameMs = performance.now() - t0;
+}
+
+let wireCache = { key: "", edges: [] };
+function wireEdges() {
+  const key = st.order.length + ":" + st.nextId;
+  if (wireCache.key === key) return wireCache.edges;
+  const nodes = [];
+  for (const id of st.order) { const e = st.ents.get(id); if (e.type === "pole") nodes.push({ x: e.x, y: e.y }); else if (e.type === "hub") nodes.push({ x: e.x + 1, y: e.y + 1, hub: true }); }
+  const r2 = C.BUILDINGS.pole.reach ** 2, used = new Array(nodes.length).fill(false), edges = [];
+  for (let s0 = 0; s0 < nodes.length; s0++) {
+    if (used[s0]) continue;
+    used[s0] = true; const tree = [s0];
+    while (true) {
+      let best = null, bd = 1e9;
+      for (const i of tree) for (let j = 0; j < nodes.length; j++) {
+        if (used[j]) continue;
+        const d = (nodes[i].x - nodes[j].x) ** 2 + (nodes[i].y - nodes[j].y) ** 2;
+        if (d <= r2 && d < bd) { bd = d; best = [i, j]; }
+      }
+      if (!best) break;
+      used[best[1]] = true; tree.push(best[1]); edges.push([nodes[best[0]], nodes[best[1]]]);
+    }
+  }
+  wireCache = { key, edges };
+  return edges;
+}
+
+function diamond(g, x, y, s, ox, oy, fill) {
+  const p = [toScreen(x, y), toScreen(x + s, y), toScreen(x + s, y + s), toScreen(x, y + s)];
+  g.beginPath(); p.forEach(([a, b], i) => i ? g.lineTo(a - ox, b - oy) : g.moveTo(a - ox, b - oy)); g.closePath();
+  fill ? g.fill() : g.stroke();
+}
+function wire(g, ax, ay, bx, by) {
+  const n = 12; g.beginPath();
+  for (let i = 0; i <= n; i++) { const t = i / n, x = ax + (bx - ax) * t, y = ay + (by - ay) * t + Math.sin(Math.PI * t) * 4; i ? g.lineTo(Math.round(x) + 0.5, Math.round(y) + 0.5) : g.moveTo(Math.round(x) + 0.5, Math.round(y) + 0.5); }
+  g.stroke();
+}
+function icon(g, e, kind, ox, oy) {
+  const [sx, sy] = toScreen(e.x + e.size / 2, e.y + e.size / 2, 2.1);
+  const x = Math.round(sx - ox), y = Math.round(sy - oy);
+  const bolt = [[1, -4], [0, -3], [0, -2], [-1, -1], [-1, 0], [0, 0], [1, 0], [0, 1], [0, 2], [-1, 3]];
+  g.fillStyle = "#11151b";
+  for (const [a, b] of bolt) g.fillRect(x + a - 1, y + b - 1, 4, 3);
+  g.fillStyle = kind === "power" ? "#ef5b5b" : "#f2b441";
+  for (const [a, b] of bolt) g.fillRect(x + a, y + b, 2, 1);
+}
+function deliveredRate() {
+  if (deliveredWindow.length < 2) return 0;
+  const a = deliveredWindow[0], b = deliveredWindow[deliveredWindow.length - 1];
+  const dtm = (b[0] - a[0]) / 3600; if (dtm <= 0) return 0;
+  let n = 0; for (const k of Object.keys(b[1])) n += b[1][k] - a[1][k];
+  return n / dtm;
+}
+
+// ---------------- input ----------------
+function ghostTile() {
+  const s = C.BUILDINGS[ui.tool].size;
+  return [Math.floor(ui.hover[0] - (s - 1) / 2), Math.floor(ui.hover[1] - (s - 1) / 2)];
+}
+function tryBuild(tx, ty) {
+  const r = S.build(st, ui.tool, tx, ty, ui.dir);
+  if (!r.ok && r.reason !== "occupied") toast(r.reason, "bad");
+  return r;
+}
+view.addEventListener("contextmenu", e => e.preventDefault());
+function selectAt(x, y) {
+  const ent = S.entAt(st, Math.floor(x), Math.floor(y));
+  ui.selected = ent ? ent.id : null; renderInspector(); if (ent) sfx.play("click");
+}
+function removeAt(x, y) {
+  const r = S.remove(st, Math.floor(x), Math.floor(y));
+  if (r.ok && ui.selected && !st.ents.has(ui.selected)) { ui.selected = null; renderInspector(); }
+  return r;
+}
+view.addEventListener("pointerdown", e => {
+  sfx.unlock();
+  view.setPointerCapture?.(e.pointerId);
+  ui.hover = screenToWorld(e.clientX, e.clientY);
+  if (e.button === 1 || (e.button === 0 && e.shiftKey)) { ui.pan = [e.clientX, e.clientY, cam.x, cam.y]; return; }
+  if (e.button === 2) { ui.pan = [e.clientX, e.clientY, cam.x, cam.y, true]; return; }
+  if (ui.tool === "remove") { removeAt(ui.hover[0], ui.hover[1]); ui.drag = { remove: true }; return; }
+  if (!ui.tool) {
+    // touch: drag pans, a tap selects (decided on pointerup)
+    if (e.pointerType !== "mouse") { ui.pan = [e.clientX, e.clientY, cam.x, cam.y, "tap"]; return; }
+    selectAt(ui.hover[0], ui.hover[1]);
+    return;
+  }
+  const [tx, ty] = ghostTile();
+  const r = tryBuild(tx, ty);
+  if (ui.tool === "belt") ui.drag = { x: tx, y: ty, id: r.ok ? r.id : null };
+  else if (ui.tool === "pole") ui.drag = { pole: true, x: tx, y: ty };
+});
+addEventListener("pointermove", e => {
+  ui.hover = screenToWorld(e.clientX, e.clientY);
+  if (ui.drag && ui.drag.remove) { removeAt(ui.hover[0], ui.hover[1]); return; }
+  if (ui.pan) {
+    const dx = e.clientX - ui.pan[0], dy = e.clientY - ui.pan[1];
+    if (Math.abs(dx) + Math.abs(dy) > 6) ui.pan[4] = false;
+    cam.x = ui.pan[2] - dx / cam.zoom; cam.y = ui.pan[3] - dy / cam.zoom;
+  }
+  if (ui.drag && ui.tool === "belt") {
+    const tx = Math.floor(ui.hover[0]), ty = Math.floor(ui.hover[1]);
+    if (tx === ui.drag.x && ty === ui.drag.y) return;
+    // walk one tile at a time toward the cursor, turning the previous belt
+    const ddx = tx - ui.drag.x, ddy = ty - ui.drag.y;
+    const dir = Math.abs(ddx) >= Math.abs(ddy) ? (ddx > 0 ? 0 : 2) : (ddy > 0 ? 1 : 3);
+    const prev = ui.drag.id && st.ents.get(ui.drag.id);
+    if (prev) S.rotate(st, prev.x, prev.y, dir);
+    ui.dir = dir;
+    const nx = ui.drag.x + S.DX[dir], ny = ui.drag.y + S.DY[dir];
+    const r = S.build(st, "belt", nx, ny, dir);
+    ui.drag = { x: nx, y: ny, id: r.ok ? r.id : null };
+    if (!r.ok && r.reason !== "occupied") { toast(r.reason, "bad"); ui.drag = null; }
+  }
+  updateTip(e);
+});
+addEventListener("pointerup", e => {
+  if (ui.pan && ui.pan[4] === true && e.button === 2) removeAt(ui.hover[0], ui.hover[1]);
+  if (ui.pan && ui.pan[4] === "tap") selectAt(ui.hover[0], ui.hover[1]);
+  ui.pan = null; ui.drag = null;
+});
+view.addEventListener("wheel", e => {
+  e.preventDefault();
+  const before = screenToWorld(e.clientX, e.clientY);
+  cam.zoom = Math.max(1, Math.min(6, cam.zoom + (e.deltaY < 0 ? 1 : -1)));
+  const after = screenToWorld(e.clientX, e.clientY);
+  const [a, b] = toScreen(before[0], before[1]), [c, d] = toScreen(after[0], after[1]);
+  cam.x += a - c; cam.y += b - d;
+}, { passive: false });
+
+const keys = new Set();
+addEventListener("keydown", e => {
+  if (e.target.tagName === "INPUT") return;
+  keys.add(e.key.toLowerCase());
+  sfx.unlock();
+  const b = Object.keys(C.BUILDINGS).find(k => C.BUILDINGS[k].key === e.key);
+  if (b) { selectTool(ui.tool === b ? null : b); return; }
+  const k = e.key.toLowerCase();
+  if (k === "r") {
+    if (ui.tool) ui.dir = (ui.dir + 1) % 4;
+    else if (ui.hover) { S.rotate(st, Math.floor(ui.hover[0]), Math.floor(ui.hover[1])); renderInspector(); }
+  } else if (k === "escape") { selectTool(null); ui.selected = null; renderInspector(); toggleTechs(false); }
+  else if (k === "x" && ui.hover) S.remove(st, Math.floor(ui.hover[0]), Math.floor(ui.hover[1]));
+  else if (k === "t") toggleTechs();
+  else if (k === "p") { ui.paused = !ui.paused; toast(ui.paused ? "paused" : "running"); }
+  else if (k === "h") $("help").style.display = $("help").style.display === "none" ? "" : "none";
+});
+addEventListener("keyup", e => keys.delete(e.key.toLowerCase()));
+function panKeys(dt) {
+  const v = 420 * dt / cam.zoom * 2;
+  if (keys.has("w") || keys.has("arrowup")) cam.y -= v;
+  if (keys.has("s") || keys.has("arrowdown")) cam.y += v;
+  if (keys.has("a") || keys.has("arrowleft")) cam.x -= v;
+  if (keys.has("d") || keys.has("arrowright")) cam.x += v;
+}
+
+// ---------------- HUD ----------------
+const iconURL = new Map();
+function iconSrc(item) {
+  if (!iconURL.has(item)) iconURL.set(item, itemIcon(item).c.toDataURL());
+  return iconURL.get(item);
+}
+const toolURL = new Map();
+function toolSrc(type) {
+  if (!toolURL.has(type)) toolURL.set(type, (type === "belt" ? beltSprite(0, 0) : machineSprite(type, 0, true, 0)).c.toDataURL());
+  return toolURL.get(type);
+}
+function costText(cost) { return Object.keys(cost).map(k => `${cost[k]} ${C.ITEMS[k].name}`).join(", "); }
+
+function buildToolbar() {
+  const tb = $("toolbar");
+  tb.innerHTML = "";
+  for (const k of Object.keys(C.BUILDINGS)) {
+    const B = C.BUILDINGS[k];
+    if (!B.cost) continue;
+    const locked = !S.techUnlocked(st, B.tech);
+    const btn = document.createElement("button");
+    btn.className = "tool" + (ui.tool === k ? " on" : "") + (locked ? " locked" : "");
+    btn.dataset.tool = k;
+    btn.innerHTML = `<img class="px" src="${toolSrc(k)}" style="width:${k === "belt" || k === "pole" ? 34 : 56}px"><span class="k">${B.key}</span><span class="nm">${B.name}</span>`;
+    btn.onpointerenter = ev => ev.pointerType === "mouse" && showTip(ev, `<b>${B.name}</b><br>${costText(B.cost)}${B.power ? `<br>${B.power} kW` : ""}${B.output ? `<br>+${B.output} kW` : ""}${locked ? `<br><span style="color:var(--bad)">needs ${C.TECHS[B.tech].name}</span>` : ""}`);
+    btn.onpointerleave = hideTip;
+    btn.onclick = () => { if (!locked) selectTool(ui.tool === k ? null : k); };
+    tb.appendChild(btn);
+  }
+  const rm = document.createElement("button");
+  rm.className = "tool" + (ui.tool === "remove" ? " on" : ""); rm.dataset.tool = "remove";
+  rm.innerHTML = `<span class="k">X</span><span class="big">&times;</span><span class="nm">Remove</span>`;
+  rm.onclick = () => selectTool(ui.tool === "remove" ? null : "remove");
+  tb.appendChild(rm);
+  const sp = document.createElement("div"); sp.id = "speed";
+  for (const v of [1, 2, 4]) { const b = document.createElement("button"); b.textContent = v + "x"; b.className = ui.speed === v ? "on" : ""; b.onclick = () => { ui.speed = v; buildToolbar(); }; sp.appendChild(b); }
+  tb.appendChild(sp);
+  const zm = document.createElement("div"); zm.id = "speed";
+  for (const [lbl, d] of [["+", 1], ["\u2212", -1]]) { const b = document.createElement("button"); b.textContent = lbl; b.setAttribute("aria-label", d > 0 ? "zoom in" : "zoom out"); b.onclick = () => { cam.zoom = Math.max(1, Math.min(6, cam.zoom + d)); }; zm.appendChild(b); }
+  tb.appendChild(zm);
+}
+function selectTool(t) {
+  if (t && t !== "remove" && !S.techUnlocked(st, C.BUILDINGS[t].tech)) { toast("needs " + C.TECHS[C.BUILDINGS[t].tech].name, "bad"); return; }
+  ui.tool = t; if (t) { ui.selected = null; renderInspector(); }
+  document.querySelectorAll(".tool").forEach(b => b.classList.toggle("on", b.dataset.tool === t));
+  view.style.cursor = t ? "none" : "crosshair";
+  sfx.play("click");
+}
+
+const SHOWN = ["iron_plate", "copper_plate", "brick", "gear", "wire", "circuit", "sci_red", "sci_green"];
+function renderHUD() {
+  const now = deliveredWindow.length > 1 ? deliveredWindow[deliveredWindow.length - 1][1] : null, then = deliveredWindow[0] && deliveredWindow[0][1];
+  const mins = deliveredWindow.length > 1 ? (deliveredWindow[deliveredWindow.length - 1][0] - deliveredWindow[0][0]) / 3600 : 0;
+  $("stock").innerHTML = SHOWN.filter(k => st.stock[k] > 0 || st.delivered[k] > 0 || k === "iron_plate").map(k => {
+    const r = now && mins > 0 ? Math.round((now[k] - then[k]) / mins) : 0;
+    return `<span class="res" title="${C.ITEMS[k].name}"><img class="px" src="${iconSrc(k)}"><span class="n">${fmt(st.stock[k])}</span>${r ? `<span class="r">+${r}/m</span>` : ""}</span>`;
+  }).join("");
+  let cap = 0, dem = 0, worst = 1000;
+  for (const n of st.power.nets) { cap += n.cap; dem += n.demand; worst = Math.min(worst, n.sat); }
+  $("pw-txt").textContent = `${dem} / ${cap} kW`;
+  const bar = $("pw-bar"); bar.style.width = (cap ? Math.min(100, dem / cap * 100) : 0) + "%";
+  bar.style.background = worst >= 1000 ? "var(--good)" : worst >= 500 ? "var(--warn)" : "var(--bad)";
+  const cur = st.tech.current;
+  if (cur) {
+    const need = S.techCost(st, cur, st.tech.levels[cur]);
+    $("rs-txt").textContent = `${C.TECHS[cur].name.split(" ")[0]} ${st.tech.units}/${need}`;
+    $("rs-bar").style.width = (st.tech.units / need * 100) + "%";
+  } else { $("rs-txt").textContent = "none (T)"; $("rs-bar").style.width = "0"; }
+  $("clock").textContent = `t+${Math.floor(st.tick / 3600)}m ${String(Math.floor(st.tick / 60) % 60).padStart(2, "0")}s · ${perf.fps} fps`;
+  document.querySelectorAll(".tool").forEach(b => {
+    const B = C.BUILDINGS[b.dataset.tool]; if (!B || !B.cost) return;
+    b.classList.toggle("poor", Object.keys(B.cost).some(k => st.stock[k] < B.cost[k]));
+  });
+  if (ui.selected) renderInspector(true);
+  if (ui.showTechs) renderTechs();
+}
+function fmt(n) { return n >= 1e6 ? (n / 1e6).toFixed(1) + "M" : n >= 1e4 ? (n / 1e3).toFixed(1) + "k" : String(n); }
+
+function chip(item, n) { return `<span class="chip"><img class="px" src="${iconSrc(item)}">${n}</span>`; }
+function renderInspector(soft) {
+  const box = $("inspect");
+  const e = ui.selected && st.ents.get(ui.selected);
+  if (!e) { box.style.display = "none"; return; }
+  if (soft && box.matches(":hover")) return;
+  box.style.display = "block";
+  const B = C.BUILDINGS[e.type], net = netOf(e);
+  let status = "", body = "";
+  const pw = B.power ? (net ? (net.sat >= 1000 ? `<span style="color:var(--good)">powered</span>` : `<span style="color:var(--warn)">brownout ${Math.round(net.sat / 10)}%</span>`) : `<span style="color:var(--bad)">no power - place a pole nearby</span>`) : "";
+  if (e.type === "drill") {
+    status = e.working ? "mining" : e.out ? "output blocked" : "idle";
+    body = `<div class="eyebrow">Deposit</div><div class="buf">${chip(C.ORES[e.ore - 1], (e.rich / 1000).toFixed(2) + "x")} infinite</div>
+      <div class="eyebrow">Rate</div>${(C.BUILDINGS.drill.rate * e.rich / 1000 * (1 + 0.1 * st.tech.levels.mining_prod)).toFixed(1)} ore/min at full power`;
+  } else if (e.type === "smelter" || e.type === "assembler") {
+    const R = e.recipe && C.RECIPES[e.recipe];
+    status = e.working ? "working" : R ? "waiting for input" : "no recipe";
+    body = `<div class="eyebrow">Input</div><div class="buf">${R ? Object.keys(R.in).map(k => chip(k, `${e.inb[k] || 0}/${R.in[k]}`)).join("") : "auto (smelts any ore)"}</div>
+      <div class="eyebrow">Output</div><div class="buf">${R ? Object.keys(R.out).map(k => chip(k, e.outb[k] || 0)).join("") : "-"}</div>
+      <div class="bar"><i style="width:${R ? e.progress / (R.time * 10) : 0}%;background:var(--amber)"></i></div>`;
+    if (e.type === "assembler") {
+      body += `<div class="eyebrow" style="margin-top:10px">Recipe</div><div class="recipes">` + Object.keys(C.RECIPES).filter(k => C.RECIPES[k].machine === "assembler").map(k => {
+        const ok = S.techUnlocked(st, C.RECIPES[k].tech);
+        return `<button class="btn${e.recipe === k ? " on" : ""}" data-recipe="${k}" ${ok ? "" : "disabled"}><img class="px" src="${iconSrc(k)}">${C.ITEMS[k].name}</button>`;
+      }).join("") + `</div>`;
+    }
+  } else if (e.type === "generator") {
+    status = e.load > 0 ? `generating ${e.load} kW` : "idle";
+    body = `<div class="eyebrow">Fuel</div><div class="buf">${chip("coal", e.fuel)}</div><div class="bar"><i style="width:${e.energy / (C.COAL_KJ * 60) * 100}%;background:var(--amber)"></i></div>`;
+  } else if (e.type === "lab") {
+    status = e.working ? "researching" : st.tech.current ? "waiting for packs" : "no research selected (T)";
+    body = `<div class="eyebrow">Packs</div><div class="buf">${chip("sci_red", e.inb.sci_red || 0)}${chip("sci_green", e.inb.sci_green || 0)}</div>`;
+  } else if (e.type === "hub") {
+    status = "accepting all items";
+    body = `<div class="eyebrow">Delivered per minute</div>${Math.round(deliveredRate())} items/min<br><div class="eyebrow" style="margin-top:8px">Core reactor</div>+${C.BUILDINGS.hub.output} kW, acts as a power pole`;
+  } else if (e.type === "pole") { status = net ? `network: ${net.demand}/${net.cap} kW` : "unconnected"; }
+  else if (e.type === "solar") { status = `+${B.output} kW`; }
+  box.innerHTML = `<h3>${B.name}</h3><div class="st">${status}${pw ? " · " + pw : ""}</div>${body}
+    ${e.type !== "hub" ? `<div class="row" style="margin-top:12px"><button class="btn" id="i-rot">Rotate (R)</button><button class="btn" id="i-del">Remove</button></div>` : ""}`;
+  box.querySelectorAll("[data-recipe]").forEach(b => b.onclick = () => { S.setRecipe(st, e.id, b.dataset.recipe); sfx.play("click"); renderInspector(); });
+  const rot = $("i-rot"); if (rot) rot.onclick = () => { S.rotate(st, e.x, e.y); renderInspector(); };
+  const del = $("i-del"); if (del) del.onclick = () => { S.remove(st, e.x, e.y); ui.selected = null; renderInspector(); };
+}
+
+const EFFECT = { belt_speed: "+50% belt speed per level", unlock: "unlocks new content", mining: "+10% drill output per level", speed: "+15% smelter & assembler speed per level", power: "+50% generator output per level" };
+function toggleTechs(on) { ui.showTechs = on === undefined ? !ui.showTechs : on; $("techs").style.display = ui.showTechs ? "block" : "none"; if (ui.showTechs) renderTechs(); }
+function renderTechs() {
+  const box = $("techs");
+  if (box.matches(":hover") && box.dataset.ready) return;
+  box.dataset.ready = 1;
+  box.innerHTML = `<h2>RESEARCH</h2><div class="eyebrow">Labs consume one of each pack per unit. Infinite techs grow geometrically.</div>` +
+    Object.keys(C.TECHS).map(k => {
+      const T = C.TECHS[k], lv = st.tech.levels[k], avail = S.techAvailable(st, k);
+      const done = !avail && (T.max && lv >= T.max), locked = !avail && !done;
+      const need = S.techCost(st, k, lv);
+      return `<div class="tech${st.tech.current === k ? " on" : ""}${done ? " done" : ""}${locked ? " locked" : ""}" data-tech="${k}">
+        <span class="nm">${T.name} <span class="lv">${T.max === 1 ? (lv ? "done" : "") : "lv " + lv + (T.max ? "/" + T.max : "")}</span></span>
+        <span class="cost">${done ? "" : need + " x " + T.packs.map(p => `<img class="px" src="${iconSrc(p)}">`).join("")}</span>
+        <span class="ef">${EFFECT[T.effect]}${T.req && !st.tech.levels[T.req] ? ` · requires ${C.TECHS[T.req].name}` : ""}${st.tech.current === k ? ` · ${st.tech.units}/${need} units` : ""}</span></div>`;
+    }).join("");
+  box.querySelectorAll("[data-tech]").forEach(d => d.onclick = () => { if (S.setResearch(st, d.dataset.tech)) { sfx.play("click"); box.dataset.ready = ""; renderTechs(); } });
+}
+$("research-mini").onclick = () => toggleTechs();
+$("help-x").onclick = () => $("help").style.display = "none";
+
+function toast(msg, kind = "") {
+  const t = document.createElement("div"); t.className = "toast " + kind; t.textContent = msg;
+  $("toasts").appendChild(t); setTimeout(() => t.remove(), 3300);
+  while ($("toasts").children.length > 4) $("toasts").firstChild.remove();
+}
+function showTip(ev, html) { const t = $("tip"); t.innerHTML = html; t.style.display = "block"; t.style.left = ev.clientX + 12 + "px"; t.style.top = ev.clientY - 60 + "px"; }
+function hideTip() { $("tip").style.display = "none"; }
+function updateTip(ev) {
+  if (ui.tool || !ui.hover || ev.target !== view) { if (ev.target === view) hideTip(); return; }
+  const x = Math.floor(ui.hover[0]), y = Math.floor(ui.hover[1]);
+  if (x < 0 || y < 0 || x >= st.W || y >= st.H) return hideTip();
+  const e = S.entAt(st, x, y), o = st.ore[y * st.W + x];
+  if (e) showTip(ev, `<b>${C.BUILDINGS[e.type].name}</b>${e.working ? " · working" : ""}<br><span style="color:var(--muted)">click to inspect</span>`);
+  else if (o) showTip(ev, `<b>${C.ITEMS[C.ORES[o - 1]].name}</b> deposit<br>richness ${(st.rich[y * st.W + x] / 1000).toFixed(2)}x · infinite`);
+  else hideTip();
+}
+
+// ---------------- boot ----------------
+async function boot() {
+  const t0 = performance.now();
+  drawTerrain();
+  // pre-bake what the first screen needs
+  for (const k of ["drill", "smelter", "assembler", "generator", "lab"]) for (let d = 0; d < 4; d++) machineSprite(k, d, false, 0);
+  for (let f = 0; f < FRAMES; f++) machineSprite("hub", 0, true, f);
+  for (let d = 0; d < 4; d++) for (let f = 0; f < BELT_FRAMES; f++) beltSprite(d, f);
+  perf.bootMs = Math.round(performance.now() - t0);
+  const hub = st.ents.get(1);
+  centreOn(hub.x + 1.5, hub.y + 1.5);
+  cam.zoom = innerWidth > 1400 ? 3 : 2;
+  if (params.has("bot") || location.hash === "#bot") await runBot(+(params.get("bot") || 60));
+  if (params.has("zoom")) cam.zoom = +params.get("zoom");
+  buildToolbar(); renderHUD();
+  $("loading").remove();
+  if (st.tick === 0) toast("Build drills on ore and belt plates into the Core Hub", "good");
+  requestAnimationFrame(frame);
+  setInterval(renderHUD, 250);
+}
+// let the playtest bot build a starter factory in this world (same commands a player uses)
+async function runBot(extraSeconds = 60) {
+  const Bot = __req("../../qa/bot.mjs");
+  const a = Bot.starterFactory(st);
+  Bot.run(st, 120);
+  Bot.scienceBlock(st, a.gen);
+  Bot.run(st, extraSeconds);
+  st.events.length = 0;
+  buildToolbar();
+}
+$("bot-go").onclick = async () => {
+  if (st.order.length > 1) { toast("the bot needs an empty world: remove your buildings first", "bad"); return; }
+  $("bot-go").disabled = true; $("bot-go").textContent = "building…";
+  await new Promise(r => setTimeout(r, 30));
+  await runBot(30);
+  $("bot-go").textContent = "built";
+  if (innerWidth < 900) $("help").style.display = "none";
+  toast("bot built a starter factory: drills, smelters, gears, science", "good");
+};
+
+function frame(now) {
+  const dt = simulate(now);
+  panKeys(dt || 1 / 60);
+  draw(dt);
+  sfx.ambient(st);
+  perf.frames++;
+  if (now - perf.last > 1000) { perf.fps = perf.frames; perf.frames = 0; perf.last = now; }
+  requestAnimationFrame(frame);
+}
+
+// QA hooks: the automated harness drives and inspects the real game through these.
+window.__fu = { st: () => st, S, C, cam, ui, perf, sprites, selectTool, centreOn, toScreen, screenToWorld, renderHUD, toggleTechs,
+  setSpeed: v => { ui.speed = v; }, setPaused: v => { ui.paused = v; }, stepN: n => { for (let i = 0; i < n; i++) { S.step(st); handleEvents(); } } };
+boot();
+
+return {  };
+});
+__def("content.js", function () {
+// Factory Universe content spec. Single source of truth for the JS sim, the
+// renderer and the generated Luau module (tools/gen-luau-content.mjs).
+// All times are in ticks (60 ticks = 1 s). Power in kW. Speeds in permille.
+
+const TPS = 60;
+
+const ITEMS = {
+  iron_ore:     { name: "Iron Ore",     color: "#8c9bb0" },
+  copper_ore:   { name: "Copper Ore",   color: "#d9844a" },
+  coal:         { name: "Coal",         color: "#2b2b33" },
+  stone:        { name: "Stone",        color: "#b5a58a" },
+  iron_plate:   { name: "Iron Plate",   color: "#c9d3de" },
+  copper_plate: { name: "Copper Plate", color: "#f0a060" },
+  brick:        { name: "Stone Brick",  color: "#c27a5a" },
+  gear:         { name: "Gear",         color: "#9fb0c0" },
+  wire:         { name: "Copper Wire",  color: "#ffb36b" },
+  circuit:      { name: "Circuit",      color: "#5fd07a" },
+  sci_red:      { name: "Automation Pack", color: "#e8484f" },
+  sci_green:    { name: "Logistic Pack",   color: "#4fd86a" },
+};
+
+// Factorio-referenced numbers where they exist (see reference/NOTES.md).
+const RECIPES = {
+  iron_plate:   { machine: "smelter",   time: 192, in: { iron_ore: 1 },   out: { iron_plate: 1 } },
+  copper_plate: { machine: "smelter",   time: 192, in: { copper_ore: 1 }, out: { copper_plate: 1 } },
+  brick:        { machine: "smelter",   time: 192, in: { stone: 2 },      out: { brick: 1 } },
+  gear:         { machine: "assembler", time: 30,  in: { iron_plate: 2 }, out: { gear: 1 } },
+  wire:         { machine: "assembler", time: 30,  in: { copper_plate: 1 }, out: { wire: 2 }, tech: "electronics" },
+  circuit:      { machine: "assembler", time: 30,  in: { iron_plate: 1, wire: 3 }, out: { circuit: 1 }, tech: "electronics" },
+  sci_red:      { machine: "assembler", time: 300, in: { copper_plate: 1, gear: 1 }, out: { sci_red: 1 } },
+  sci_green:    { machine: "assembler", time: 360, in: { gear: 1, circuit: 1 }, out: { sci_green: 1 }, tech: "logistic_science" },
+};
+
+// size = footprint in tiles. power = kW drawn while working (idle draws 10%).
+const BUILDINGS = {
+  belt:      { name: "Conveyor",    size: 1, cost: { iron_plate: 1 }, key: "1" },
+  drill:     { name: "Mining Drill",size: 2, cost: { iron_plate: 8, gear: 3 }, power: 90, rate: 30, key: "2" },
+  smelter:   { name: "Smelter",     size: 2, cost: { iron_plate: 10, brick: 4 }, power: 90, speed: 1000, key: "3" },
+  assembler: { name: "Assembler",   size: 2, cost: { iron_plate: 9, gear: 5 }, power: 75, speed: 750, key: "4" },
+  generator: { name: "Coal Generator", size: 2, cost: { iron_plate: 10, gear: 5 }, output: 600, key: "5" },
+  pole:      { name: "Power Pole",  size: 1, cost: { iron_plate: 1, copper_plate: 1 }, supply: 2, reach: 7, key: "6" },
+  lab:       { name: "Research Lab",size: 2, cost: { copper_plate: 10, gear: 10 }, power: 60, key: "7" },
+  solar:     { name: "Solar Array", size: 2, cost: { iron_plate: 10, copper_plate: 10, circuit: 5 }, output: 60, tech: "solar", key: "8" },
+  hub:       { name: "Core Hub",    size: 3, cost: null, output: 150 }, // also acts as a pole
+};
+
+// Drill rate: ore per minute at richness 1000 (0.5/s, Factorio electric drill).
+// Coal: 4 MJ per unit (Factorio value).
+const COAL_KJ = 4000;
+
+// Belt: 256 positions per tile, 64 min spacing, 8 positions/tick base (Factorio).
+const BELT = { len: 256, gap: 64, baseSpeed: 8, speedPerLevel: 4, maxSpeed: 32 };
+
+// cost(level): c = base*1000, then c = floor(c*growth/1000) per level, units = floor(c/1000); each unit consumes one of
+// each listed pack and takes `time` ticks in one lab.
+const TECHS = {
+  logistics:        { name: "Belt Logistics",     packs: ["sci_red"],              base: 10, growth: 2000, time: 300, max: 6, effect: "belt_speed" },
+  electronics:      { name: "Electronics",        packs: ["sci_red"],              base: 20, growth: 1000, time: 300, max: 1, effect: "unlock" },
+  solar:            { name: "Solar Energy",       packs: ["sci_red"],              base: 30, growth: 1000, time: 300, max: 1, effect: "unlock", req: "electronics" },
+  logistic_science: { name: "Logistic Science",   packs: ["sci_red"],              base: 40, growth: 1000, time: 300, max: 1, effect: "unlock", req: "electronics" },
+  mining_prod:      { name: "Mining Productivity",packs: ["sci_red", "sci_green"], base: 25, growth: 1600, time: 600, max: 0, effect: "mining", req: "logistic_science" },
+  overclock:        { name: "Machine Overclock",  packs: ["sci_red", "sci_green"], base: 25, growth: 1700, time: 600, max: 0, effect: "speed",  req: "logistic_science" },
+  steam:            { name: "High-Pressure Steam",packs: ["sci_red"],              base: 25, growth: 1800, time: 300, max: 5, effect: "power" },
+};
+
+const START_STOCK = { iron_plate: 160, gear: 40, copper_plate: 40, brick: 24, coal: 0 };
+
+const ORES = ["iron_ore", "copper_ore", "coal", "stone"];
+
+return { TPS, ITEMS, RECIPES, BUILDINGS, COAL_KJ, BELT, TECHS, START_STOCK, ORES };
+});
+__def("../../engine/sim/factory.js", function () {
+// Deterministic factory simulation. Integer math only, fixed 60 Hz tick,
+// entities updated in id order, so the Luau port (roblox/src/shared/Sim.luau)
+// can reproduce the same state hash tick for tick.
+//
+// The sim knows nothing about rendering. It emits `events` that the
+// presentation layer turns into VFX/SFX, and exposes plain state for drawing.
+
+const DX = [1, 0, -1, 0];
+const DY = [0, 1, 0, -1];
+
+const PM = 2147483647; // Park-Miller modulus; all products stay below 2^53.
+
+function pmNext(s) { return (s * 48271) % PM; }
+
+function hash2(x, y, seed) {
+  let h = ((x + 1) * 374761 + (y + 1) * 668265 + seed * 1013) % PM;
+  if (h <= 0) h += PM - 1;
+  h = pmNext(pmNext(h));
+  return h / PM; // [0,1)
+}
+
+// Arithmetic-only sin/cos: V8 and Luau may round the platform sine
+// differently in the last bit, which would fork world generation.
+const TWO_PI = 6.283185307179586;
+function dsin(x) {
+  x = x - Math.floor(x / TWO_PI + 0.5) * TWO_PI;
+  const x2 = x * x;
+  let term = x, sum = x;
+  for (let n = 1; n <= 11; n++) { term = term * -x2 / ((2 * n) * (2 * n + 1)); sum = sum + term; }
+  return sum;
+}
+function dcos(x) { return dsin(x + 1.5707963267948966); }
+
+function smooth(t) { return t * t * (3 - 2 * t); }
+
+function valueNoise(x, y, cell, seed) {
+  const gx = Math.floor(x / cell), gy = Math.floor(y / cell);
+  const fx = smooth(x / cell - gx), fy = smooth(y / cell - gy);
+  const a = hash2(gx, gy, seed), b = hash2(gx + 1, gy, seed);
+  const c = hash2(gx, gy + 1, seed), d = hash2(gx + 1, gy + 1, seed);
+  const top = a + (b - a) * fx, bot = c + (d - c) * fx;
+  return top + (bot - top) * fy;
+}
+
+function fbm(x, y, seed) {
+  return valueNoise(x, y, 16, seed) * 0.6 + valueNoise(x, y, 8, seed + 7) * 0.3 + valueNoise(x, y, 4, seed + 13) * 0.1;
+}
+
+// terrain codes
+const T_GRASS = 0, T_SAND = 1, T_ROCK = 2, T_WATER = 3;
+
+function createWorld(content, { W = 64, H = 64, seed = 1 } = {}) {
+  const N = W * H;
+  const st = {
+    W, H, seed, tick: 0, nextId: 1,
+    terrain: new Uint8Array(N), ore: new Uint8Array(N), rich: new Uint16Array(N),
+    occ: new Int32Array(N), ents: new Map(), order: [],
+    stock: {}, delivered: {}, produced: {},
+    tech: { levels: {}, current: null, units: 0 },
+    power: { nets: [], dirty: true },
+    events: [], content,
+  };
+  for (const k of Object.keys(content.ITEMS)) { st.stock[k] = 0; st.delivered[k] = 0; st.produced[k] = 0; }
+  for (const k of Object.keys(content.START_STOCK)) st.stock[k] = content.START_STOCK[k];
+  for (const k of Object.keys(content.TECHS)) st.tech.levels[k] = 0;
+  genTerrain(st);
+  const hc = Math.floor(W / 2) - 1;
+  placeRaw(st, "hub", hc, hc, 0);
+  return st;
+}
+
+function genTerrain(st) {
+  const { W, H, seed, content } = st;
+  const cx = W / 2, cy = H / 2;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = y * W + x;
+    const d = Math.sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
+    const wet = fbm(x, y, seed + 101) + Math.max(0, 1 - d / 16) * 0.5;
+    const rock = fbm(x, y, seed + 202);
+    let t = T_GRASS;
+    if (wet < 0.27) t = T_WATER; else if (wet < 0.32) t = T_SAND;
+    else if (rock > 0.74 && d > 12) t = T_ROCK;
+    st.terrain[i] = t;
+  }
+  // ore patches: four guaranteed starter patches, then richer ones further out
+  let s = (seed * 7919) % PM || 1;
+  const rnd = () => { s = pmNext(s); return s / PM; };
+  const patches = [];
+  for (let k = 0; k < 4; k++) {
+    const ang = (k + rnd() * 0.5) * 3.141592653589793 / 2;
+    patches.push({ ore: k + 1, x: cx + dcos(ang) * 11, y: cy + dsin(ang) * 11, r: 3.2 });
+  }
+  for (let k = 0; k < 10; k++) {
+    const ang = rnd() * TWO_PI, dist = 17 + rnd() * 12;
+    patches.push({ ore: 1 + Math.floor(rnd() * 4), x: cx + dcos(ang) * dist, y: cy + dsin(ang) * dist, r: 2.6 + rnd() * 2.2 });
+  }
+  for (const p of patches) {
+    const r = Math.ceil(p.r + 2);
+    for (let y = Math.floor(p.y) - r; y <= Math.floor(p.y) + r; y++) for (let x = Math.floor(p.x) - r; x <= Math.floor(p.x) + r; x++) {
+      if (x < 0 || y < 0 || x >= W || y >= H) continue;
+      const dd = Math.sqrt((x - p.x) * (x - p.x) + (y - p.y) * (y - p.y));
+      const edge = p.r * (0.75 + 0.5 * valueNoise(x, y, 3, seed + p.ore * 31));
+      if (dd > edge) continue;
+      const i = y * W + x;
+      st.terrain[i] = T_GRASS;
+      st.ore[i] = p.ore;
+      const centre = 1 - dd / (edge + 0.001);
+      const far = Math.sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
+      st.rich[i] = Math.floor(800 + far * 30 + centre * 600); // permille, infinite deposit
+    }
+  }
+}
+
+// ---------- helpers ----------
+const sizeOf = (st, type) => st.content.BUILDINGS[type].size;
+
+function footprint(st, type, x, y) {
+  const s = sizeOf(st, type), out = [];
+  for (let j = 0; j < s; j++) for (let i = 0; i < s; i++) out.push([x + i, y + j]);
+  return out;
+}
+
+function frontTiles(e) {
+  const s = e.size, out = [];
+  for (let k = 0; k < s; k++) {
+    if (e.dir === 0) out.push([e.x + s, e.y + k]);
+    else if (e.dir === 1) out.push([e.x + k, e.y + s]);
+    else if (e.dir === 2) out.push([e.x - 1, e.y + k]);
+    else out.push([e.x + k, e.y - 1]);
+  }
+  return out;
+}
+
+function entAt(st, x, y) {
+  if (x < 0 || y < 0 || x >= st.W || y >= st.H) return null;
+  const id = st.occ[y * st.W + x];
+  return id ? st.ents.get(id) : null;
+}
+
+function techUnlocked(st, tech) { return !tech || st.tech.levels[tech] > 0; }
+
+function techCost(st, id, level) {
+  const t = st.content.TECHS[id];
+  let c = t.base * 1000;
+  for (let i = 0; i < level; i++) c = Math.floor(c * t.growth / 1000);
+  return Math.floor(c / 1000);
+}
+
+function beltSpeed(st) {
+  const B = st.content.BELT;
+  return Math.min(B.maxSpeed, B.baseSpeed + B.speedPerLevel * st.tech.levels.logistics);
+}
+
+function newEnt(st, type, x, y, dir) {
+  const e = { id: st.nextId++, type, x, y, dir, size: sizeOf(st, type), working: false, anim: 0 };
+  if (type === "belt") e.items = [];
+  if (type === "smelter" || type === "assembler") {
+    e.recipe = type === "assembler" ? "gear" : null;
+    e.inb = {}; e.outb = {}; e.progress = 0; e.alt = 0;
+  }
+  if (type === "drill") { e.progress = 0; e.out = 0; e.alt = 0; }
+  if (type === "generator") { e.fuel = 0; e.energy = 0; e.load = 0; }
+  if (type === "lab") { e.inb = {}; e.progress = -1; }
+  return e;
+}
+
+function placeRaw(st, type, x, y, dir) {
+  const e = newEnt(st, type, x, y, dir);
+  for (const [tx, ty] of footprint(st, type, x, y)) st.occ[ty * st.W + tx] = e.id;
+  st.ents.set(e.id, e); st.order.push(e.id);
+  if (type === "drill") {
+    // dominant ore under the footprint; ties go to the lower ore code
+    const cnt = [0, 0, 0, 0, 0], rs = [0, 0, 0, 0, 0];
+    for (const [tx, ty] of footprint(st, type, x, y)) { const o = st.ore[ty * st.W + tx]; cnt[o]++; rs[o] += st.rich[ty * st.W + tx]; }
+    let best = 1;
+    for (let o = 2; o <= 4; o++) if (cnt[o] > cnt[best]) best = o;
+    e.ore = best; e.rich = Math.floor(rs[best] / 4); // empty tiles dilute the rate
+  }
+  st.power.dirty = true; st.beltsDirty = true;
+  return e;
+}
+
+// ---------- commands ----------
+function canBuild(st, type, x, y, ignoreCost = false) {
+  const B = st.content.BUILDINGS[type];
+  if (!B || type === "hub") return "unknown building";
+  if (!techUnlocked(st, B.tech)) return "needs research";
+  for (const [tx, ty] of footprint(st, type, x, y)) {
+    if (tx < 0 || ty < 0 || tx >= st.W || ty >= st.H) return "out of bounds";
+    const i = ty * st.W + tx;
+    if (st.occ[i]) return "occupied";
+    if (st.terrain[i] === T_WATER || st.terrain[i] === T_ROCK) return "blocked terrain";
+  }
+  if (type === "drill") {
+    let n = 0;
+    for (const [tx, ty] of footprint(st, type, x, y)) if (st.ore[ty * st.W + tx]) n++;
+    if (!n) return "no ore under drill";
+  }
+  if (!ignoreCost) for (const k of Object.keys(B.cost)) if ((st.stock[k] || 0) < B.cost[k]) return "not enough " + st.content.ITEMS[k].name;
+  return null;
+}
+
+function build(st, type, x, y, dir = 0) {
+  const why = canBuild(st, type, x, y);
+  if (why) return { ok: false, reason: why };
+  const B = st.content.BUILDINGS[type];
+  for (const k of Object.keys(B.cost)) st.stock[k] -= B.cost[k];
+  const e = placeRaw(st, type, x, y, dir);
+  if (st.log) st.log.push([st.tick, "build", type, x, y, dir]);
+  st.events.push({ k: "build", id: e.id, type, x, y });
+  return { ok: true, id: e.id };
+}
+
+function remove(st, x, y) {
+  const e = entAt(st, x, y);
+  if (!e || e.type === "hub") return { ok: false, reason: "nothing removable" };
+  const B = st.content.BUILDINGS[e.type];
+  if (st.log) st.log.push([st.tick, "remove", x, y]);
+  for (const k of Object.keys(B.cost)) st.stock[k] += B.cost[k];
+  // contents go back to the hub so nothing is lost
+  const back = (it, n) => { st.stock[it] += n; };
+  if (e.items) for (const it of e.items) back(it.item, 1);
+  if (e.inb) for (const k of Object.keys(e.inb)) back(k, e.inb[k]);
+  if (e.outb) for (const k of Object.keys(e.outb)) back(k, e.outb[k]);
+  if (e.type === "drill" && e.out) back(st.content.ORES[e.ore - 1], e.out);
+  if (e.type === "generator") back("coal", e.fuel);
+  for (const [tx, ty] of footprint(st, e.type, e.x, e.y)) st.occ[ty * st.W + tx] = 0;
+  st.ents.delete(e.id);
+  st.order.splice(st.order.indexOf(e.id), 1);
+  st.power.dirty = true; st.beltsDirty = true;
+  st.events.push({ k: "remove", type: e.type, x: e.x, y: e.y });
+  return { ok: true };
+}
+
+// rotate a quarter turn, or set an absolute direction when `dir` is given
+function rotate(st, x, y, dir = -1) {
+  const e = entAt(st, x, y);
+  if (!e || e.type === "hub") return false;
+  e.dir = dir >= 0 ? dir % 4 : (e.dir + 1) % 4;
+  st.beltsDirty = true;
+  if (st.log) st.log.push([st.tick, "rotate", x, y, dir]);
+  return true;
+}
+
+function setRecipe(st, id, recipe) {
+  const e = st.ents.get(id), R = st.content.RECIPES[recipe];
+  if (!e || e.type !== "assembler" || !R || R.machine !== "assembler" || !techUnlocked(st, R.tech)) return false;
+  if (e.recipe === recipe) return true;
+  if (st.log) st.log.push([st.tick, "recipe", id, recipe]);
+  for (const k of Object.keys(e.inb)) st.stock[k] += e.inb[k];
+  for (const k of Object.keys(e.outb)) st.stock[k] += e.outb[k];
+  e.inb = {}; e.outb = {}; e.progress = 0; e.recipe = recipe;
+  return true;
+}
+
+function techAvailable(st, id) {
+  const t = st.content.TECHS[id];
+  if (t.req && !st.tech.levels[t.req]) return false;
+  return t.max === 0 || st.tech.levels[id] < t.max;
+}
+
+function setResearch(st, id) {
+  if (id !== null && !techAvailable(st, id)) return false;
+  if (st.log) st.log.push([st.tick, "research", id]);
+  if (st.tech.current !== id) st.tech.units = 0;
+  st.tech.current = id;
+  return true;
+}
+
+// ---------- item transfer ----------
+function bufCap(n) { return n * 2 + 2; }
+
+function accept(st, e, item, fromDir, overflow) {
+  const C = st.content;
+  switch (e.type) {
+    case "belt": {
+      if (fromDir === (e.dir + 2) % 4) return false; // belt faces back into the source
+      const pos = overflow;
+      const last = e.items[e.items.length - 1];
+      if (last && last.pos - pos < C.BELT.gap) return false;
+      e.items.push({ item, pos, t: st.tick });
+      return true;
+    }
+    case "smelter": case "assembler": {
+      let R = e.recipe ? C.RECIPES[e.recipe] : null;
+      if (e.type === "smelter") {
+        const idle = !Object.keys(e.inb).some(k => e.inb[k] > 0) && !Object.keys(e.outb).some(k => e.outb[k] > 0) && e.progress === 0;
+        if (!R || (idle && !(item in R.in))) {
+          R = null;
+          for (const k of Object.keys(C.RECIPES)) {
+            const r = C.RECIPES[k];
+            if (r.machine === "smelter" && item in r.in && techUnlocked(st, r.tech)) { e.recipe = k; R = r; break; }
+          }
+          if (!R) return false;
+        }
+      }
+      if (!(item in R.in)) return false;
+      const have = e.inb[item] || 0;
+      if (have >= bufCap(R.in[item])) return false;
+      e.inb[item] = have + 1;
+      return true;
+    }
+    case "generator":
+      if (item !== "coal" || e.fuel >= 5) return false;
+      e.fuel++; return true;
+    case "lab": {
+      if (item !== "sci_red" && item !== "sci_green") return false;
+      if ((e.inb[item] || 0) >= 10) return false;
+      e.inb[item] = (e.inb[item] || 0) + 1; return true;
+    }
+    case "hub":
+      st.stock[item]++; st.delivered[item]++;
+      return true;
+    default: return false;
+  }
+}
+
+// direction of travel from tile a to adjacent tile b
+function dirBetween(ax, ay, bx, by) {
+  if (bx > ax) return 0; if (by > ay) return 1; if (bx < ax) return 2; return 3;
+}
+
+// push `item` from entity `src` into whatever sits on tile (tx,ty)
+function give(st, src, fx, fy, tx, ty, item, overflow) {
+  const t = entAt(st, tx, ty);
+  if (!t || t === src) return false;
+  return accept(st, t, item, dirBetween(fx, fy, tx, ty), overflow);
+}
+
+function emitFromMachine(st, e, item) {
+  const fronts = frontTiles(e);
+  for (let k = 0; k < fronts.length; k++) {
+    const idx = (e.alt + k) % fronts.length;
+    const [tx, ty] = fronts[idx];
+    const [fx, fy] = [tx - DX[e.dir], ty - DY[e.dir]];
+    if (give(st, e, fx, fy, tx, ty, item, 0)) { e.alt = (idx + 1) % fronts.length; return true; }
+  }
+  return false;
+}
+
+// ---------- power ----------
+function rebuildPower(st) {
+  const C = st.content, poles = [];
+  // the hub is a pole at its centre tile with its own core supply
+  for (const id of st.order) {
+    const e = st.ents.get(id);
+    if (e.type === "pole") poles.push(e);
+    else if (e.type === "hub") poles.push({ id: e.id, x: e.x + 1, y: e.y + 1, hub: e });
+  }
+  const parent = poles.map((_, i) => i);
+  const find = i => { while (parent[i] !== i) { parent[i] = parent[parent[i]]; i = parent[i]; } return i; };
+  const reach = C.BUILDINGS.pole.reach, sup = C.BUILDINGS.pole.supply;
+  for (let i = 0; i < poles.length; i++) for (let j = i + 1; j < poles.length; j++) {
+    const dx = poles[i].x - poles[j].x, dy = poles[i].y - poles[j].y;
+    if (dx * dx + dy * dy <= reach * reach) { const a = find(i), b = find(j); if (a !== b) parent[Math.max(a, b)] = Math.min(a, b); }
+  }
+  const nets = [];
+  const netOf = new Map();
+  for (let i = 0; i < poles.length; i++) {
+    const r = find(i);
+    if (!netOf.has(r)) { netOf.set(r, nets.length); nets.push({ members: [], poles: [], cap: 0, demand: 0, sat: 1000 }); }
+    poles[i].net = netOf.get(r);
+    if (poles[i].hub) { poles[i].hub.net = poles[i].net; nets[poles[i].net].members.push(poles[i].id); }
+    nets[poles[i].net].poles.push(poles[i].id);
+  }
+  for (const id of st.order) {
+    const e = st.ents.get(id);
+    if (e.type === "pole" || e.type === "belt" || e.type === "hub") continue;
+    e.net = -1;
+    for (const p of poles) {
+      if (e.x - sup <= p.x && p.x <= e.x + e.size - 1 + sup && e.y - sup <= p.y && p.y <= e.y + e.size - 1 + sup) { e.net = p.net; break; }
+    }
+    if (e.net >= 0) nets[e.net].members.push(e.id);
+  }
+  st.power.nets = nets;
+  st.power.dirty = false;
+}
+
+function stepPower(st) {
+  const C = st.content;
+  if (st.power.dirty) rebuildPower(st);
+  const steamMul = 1000 + 500 * st.tech.levels.steam;
+  for (const net of st.power.nets) {
+    let demand = 0, solar = 0, gens = [];
+    for (const id of net.members) {
+      const e = st.ents.get(id);
+      const P = C.BUILDINGS[e.type].power;
+      if (P) demand += e.wantsWork ? P : Math.floor(P / 10);
+      if (e.type === "solar") solar += C.BUILDINGS.solar.output;
+      if (e.type === "hub") solar += C.BUILDINGS.hub.output;
+      if (e.type === "generator" && (e.energy > 0 || e.fuel > 0)) gens.push(e);
+    }
+    const genCap = Math.floor(C.BUILDINGS.generator.output * steamMul / 1000);
+    const cap = solar + gens.length * genCap;
+    net.cap = cap; net.demand = demand;
+    net.sat = demand === 0 ? 1000 : Math.min(1000, Math.floor(cap * 1000 / demand));
+    // solar first, generators share the rest equally (Factorio priority order)
+    let rest = Math.max(0, Math.min(demand, cap) - solar);
+    for (let g = 0; g < gens.length; g++) {
+      const e = gens[g];
+      const share = g === gens.length - 1 ? rest : Math.floor(rest / (gens.length - g));
+      rest -= share;
+      e.load = share;
+      if (e.energy < share && e.fuel > 0) { e.fuel--; e.energy += C.COAL_KJ * 60; st.events.push({ k: "burn", id: e.id }); }
+      e.energy = Math.max(0, e.energy - share);
+    }
+  }
+}
+
+function satOf(st, e) {
+  if (e.net === undefined || e.net < 0) return 0;
+  return st.power.nets[e.net].sat;
+}
+
+// Belts update downstream-first (sorted by distance to the end of their chain,
+// then id) so an item leaving a tile frees space before the tile behind moves.
+function rebuildBeltOrder(st) {
+  const belts = [], dist = new Map();
+  for (const id of st.order) { const e = st.ents.get(id); if (e.type === "belt") belts.push(e); }
+  for (const b of belts) {
+    let d = 0, cur = b;
+    const seen = new Set();
+    while (true) {
+      seen.add(cur.id);
+      const nx = entAt(st, cur.x + DX[cur.dir], cur.y + DY[cur.dir]);
+      if (!nx || nx.type !== "belt" || nx.dir === (cur.dir + 2) % 4) break;
+      if (seen.has(nx.id)) { d = 1e9; break; }
+      if (dist.has(nx.id)) { d += 1 + dist.get(nx.id); break; }
+      d++; cur = nx;
+    }
+    dist.set(b.id, d);
+  }
+  belts.sort((a, b) => (dist.get(a.id) - dist.get(b.id)) || (a.id - b.id));
+  st.beltOrder = belts.map(b => b.id);
+  st.beltsDirty = false;
+}
+
+function stepBelt(st, e, speed, L, G) {
+  const items = e.items;
+  let cap = L;
+  for (let k = 0; k < items.length; k++) {
+    const it = items[k];
+    if (it.t === st.tick) { cap = it.pos - G; continue; }
+    let np = Math.min(it.pos + speed, cap);
+    if (k === 0 && np >= L) {
+      const tx = e.x + DX[e.dir], ty = e.y + DY[e.dir];
+      const over = Math.min(np - L, G - 1);
+      if (give(st, e, e.x, e.y, tx, ty, it.item, over)) { items.shift(); k--; cap = L; continue; }
+      np = L;
+    }
+    if (np < it.pos) np = it.pos;
+    it.pos = np;
+    cap = np - G;
+  }
+  e.working = items.length > 0;
+}
+
+// ---------- tick ----------
+function step(st) {
+  const C = st.content;
+  stepPower(st);
+  const speed = beltSpeed(st), L = C.BELT.len, G = C.BELT.gap;
+  const mineMul = 1000 + 100 * st.tech.levels.mining_prod;
+  const clockMul = 1000 + 150 * st.tech.levels.overclock;
+
+  if (st.beltsDirty !== false) rebuildBeltOrder(st);
+  for (const id of st.beltOrder) stepBelt(st, st.ents.get(id), speed, L, G);
+  for (const id of st.order) {
+    const e = st.ents.get(id);
+    if (!e) continue;
+    switch (e.type) {
+      case "belt": break;
+      case "drill": {
+        e.wantsWork = e.out === 0;
+        const sat = satOf(st, e);
+        e.working = false;
+        if (e.out === 0 && sat > 0) {
+          e.progress += Math.floor(e.rich * mineMul / 1000 * sat / 1000);
+          e.working = true;
+          const need = (3600 / C.BUILDINGS.drill.rate) * 1000;
+          if (e.progress >= need) { e.progress -= need; e.out = 1; st.produced[C.ORES[e.ore - 1]]++; }
+        }
+        if (e.out > 0 && emitFromMachine(st, e, C.ORES[e.ore - 1])) e.out = 0;
+        break;
+      }
+      case "smelter": case "assembler": {
+        const R = e.recipe ? C.RECIPES[e.recipe] : null;
+        e.working = false; e.wantsWork = false;
+        if (R) {
+          let room = true;
+          for (const k of Object.keys(R.out)) if ((e.outb[k] || 0) + R.out[k] > bufCap(R.out[k])) room = false;
+          let ready = e.progress > 0;
+          if (!ready) { ready = true; for (const k of Object.keys(R.in)) if ((e.inb[k] || 0) < R.in[k]) ready = false; }
+          if (ready && room) {
+            e.wantsWork = true;
+            const sat = satOf(st, e);
+            if (sat > 0) {
+              if (e.progress === 0) for (const k of Object.keys(R.in)) e.inb[k] -= R.in[k];
+              e.progress += Math.max(1, Math.floor(C.BUILDINGS[e.type].speed * clockMul / 1000 * sat / 1000));
+              e.working = true;
+              if (e.progress >= R.time * 1000) {
+                e.progress = 0;
+                for (const k of Object.keys(R.out)) { e.outb[k] = (e.outb[k] || 0) + R.out[k]; st.produced[k] += R.out[k]; }
+                st.events.push({ k: "craft", id: e.id, item: Object.keys(R.out)[0] });
+              }
+            }
+          }
+          for (const k of Object.keys(R.out)) if ((e.outb[k] || 0) > 0 && emitFromMachine(st, e, k)) e.outb[k]--;
+        }
+        break;
+      }
+      case "lab": {
+        const cur = st.tech.current;
+        e.working = false; e.wantsWork = false;
+        if (!cur) break;
+        const T = C.TECHS[cur];
+        if (e.progress < 0) {
+          let ok = true;
+          for (const p of T.packs) if (!(e.inb[p] > 0)) ok = false;
+          if (ok) { for (const p of T.packs) e.inb[p]--; e.progress = 0; }
+        }
+        if (e.progress >= 0) {
+          e.wantsWork = true;
+          const sat = satOf(st, e);
+          if (sat > 0) {
+            e.working = true;
+            e.progress += Math.floor(1000 * sat / 1000);
+            if (e.progress >= T.time * 1000) {
+              e.progress = -1;
+              st.tech.units++;
+              if (st.tech.units >= techCost(st, cur, st.tech.levels[cur])) {
+                st.tech.levels[cur]++; st.tech.units = 0;
+                st.events.push({ k: "research", tech: cur, level: st.tech.levels[cur] });
+                if (!techAvailable(st, cur)) st.tech.current = null;
+                break;
+              }
+            }
+          }
+        }
+        break;
+      }
+      case "generator":
+        e.working = e.load > 0;
+        break;
+      case "solar":
+        e.working = e.net >= 0;
+        break;
+    }
+  }
+  st.tick++;
+}
+
+// Order-sensitive state hash with exact integer arithmetic (portable to Luau).
+function stateHash(st) {
+  const M = 2147483629;
+  let h = 7;
+  const mix = v => { h = (h * 31 + (v % M + M) % M) % M; };
+  mix(st.tick);
+  for (const id of st.order) {
+    const e = st.ents.get(id);
+    mix(e.id); mix(e.x); mix(e.y); mix(e.dir);
+    if (e.items) for (const it of e.items) mix(it.pos);
+    if (e.progress !== undefined) mix(e.progress);
+    if (e.inb) for (const k of Object.keys(e.inb).sort()) mix(e.inb[k]);
+    if (e.outb) for (const k of Object.keys(e.outb).sort()) mix(e.outb[k]);
+    if (e.fuel !== undefined) { mix(e.fuel); mix(e.energy); }
+  }
+  for (const k of Object.keys(st.stock).sort()) mix(st.stock[k]);
+  mix(st.tech.units);
+  return h;
+}
+
+function terrainHash(st) {
+  const M = 2147483629;
+  let h = 7;
+  for (let i = 0; i < st.W * st.H; i++) h = (h * 31 + st.terrain[i] * 7 + st.ore[i] * 3 + st.rich[i]) % M;
+  return h;
+}
+
+// ---------- commands as data (network + replay) ----------
+// [name, ...args]; the only way players change the world, so a command log
+// plus the seed reproduces any session (multiplayer lockstep, parity tests).
+function applyCommand(st, cmd) {
+  const [k, a, b, c, d] = cmd;
+  if (k === "build") return build(st, a, b, c, d);
+  if (k === "remove") return remove(st, a, b);
+  if (k === "rotate") return { ok: rotate(st, a, b, c ?? -1) };
+  if (k === "recipe") return { ok: setRecipe(st, a, b) };
+  if (k === "research") return { ok: setResearch(st, a) };
+  return { ok: false, reason: "unknown command" };
+}
+
+// ---------- save / load (JSON; terrain is regenerated from the seed) ----------
+function serialize(st) {
+  const ents = st.order.map(id => {
+    const e = st.ents.get(id);
+    const o = { id: e.id, type: e.type, x: e.x, y: e.y, dir: e.dir };
+    for (const k of ["items", "recipe", "inb", "outb", "progress", "alt", "out", "fuel", "energy", "wantsWork", "load"]) if (e[k] !== undefined) o[k] = e[k];
+    return o;
+  });
+  return JSON.stringify({ v: 1, seed: st.seed, W: st.W, H: st.H, tick: st.tick, nextId: st.nextId, ents, stock: st.stock, delivered: st.delivered, produced: st.produced, tech: st.tech });
+}
+
+function deserialize(content, json) {
+  const d = typeof json === "string" ? JSON.parse(json) : json;
+  const st = createWorld(content, { W: d.W, H: d.H, seed: d.seed });
+  st.occ.fill(0); st.ents.clear(); st.order.length = 0;
+  for (const o of d.ents) {
+    st.nextId = o.id;
+    const e = placeRaw(st, o.type, o.x, o.y, o.dir);
+    for (const k of Object.keys(o)) if (!["id", "type", "x", "y", "dir"].includes(k)) e[k] = o[k];
+  }
+  st.nextId = d.nextId; st.tick = d.tick;
+  Object.assign(st.stock, d.stock); Object.assign(st.delivered, d.delivered); Object.assign(st.produced, d.produced);
+  st.tech = d.tech;
+  return st;
+}
+
+return { pmNext, hash2, dsin, dcos, valueNoise, fbm, createWorld, footprint, frontTiles, entAt, techUnlocked, techCost, beltSpeed, canBuild, build, remove, rotate, setRecipe, techAvailable, setResearch, step, stateHash, terrainHash, applyCommand, serialize, deserialize, DX, DY, T_GRASS, T_SAND, T_ROCK, T_WATER };
+});
+__def("../../engine/pixel/raster.js", function () {
+// Genome rasterizer: compact part lists -> isometric pixel-art sprites.
+//
+// Each output pixel casts one orthographic ray along the 2:1 isometric view
+// direction (1,1,1) against analytic primitives (box, cylinder, gear, sphere).
+// The hit gives exact depth, normal, part and material, so shading, cast
+// shadows, outlines and animation all come from geometry instead of painting.
+// Colour is then quantised onto hand-tunable hue-shifted material ramps.
+//
+// Projection (tile units): sx = (x - y) * 16, sy = (x + y) * 8 - z * 16.
+
+const TILE_W = 32, TILE_H = 16, Z_PX = 16;
+
+// ---------- palette ----------
+function hsl(h, s, l) {
+  h = ((h % 360) + 360) % 360 / 360;
+  const f = n => { const k = (n + h * 12) % 12; const a = s * Math.min(l, 1 - l); return l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)); };
+  return [Math.round(f(0) * 255), Math.round(f(8) * 255), Math.round(f(4) * 255)];
+}
+const hueToward = (h, target, amt) => { let d = ((target - h + 540) % 360) - 180; return h + d * amt; };
+
+// 6-step ramp: shadows drift cool (toward 240), highlights drift warm (toward 55)
+function makeRamp({ h, s, l = 1, glow = false }) {
+  const out = [];
+  for (let i = 0; i < 6; i++) {
+    const t = i / 5;
+    const hh = t < 0.5 ? hueToward(h, 245, 0.28 * (1 - t * 2)) : hueToward(h, 55, 0.22 * (t * 2 - 1));
+    const ll = glow ? 0.35 + 0.6 * t : (0.09 + 0.78 * Math.pow(t, 0.95)) * l + (1 - l) * 0.04;
+    const ss = Math.min(1, s * (0.7 + 0.45 * Math.sin(Math.PI * t)));
+    out.push(hsl(hh, ss, Math.min(0.96, ll)));
+  }
+  return out;
+}
+
+const MATERIALS = {
+  steel:     { h: 212, s: 0.13, metal: true },
+  dark:      { h: 225, s: 0.12, l: 0.62, metal: true },
+  copper:    { h: 22,  s: 0.62, metal: true },
+  brass:     { h: 44,  s: 0.58, metal: true },
+  brick:     { h: 10,  s: 0.42 },
+  stone:     { h: 36,  s: 0.14 },
+  hazard:    { h: 46,  s: 0.92 },
+  glass:     { h: 192, s: 0.45, metal: true },
+  blue:      { h: 206, s: 0.52 },
+  orange:    { h: 26,  s: 0.78 },
+  green:     { h: 140, s: 0.45 },
+  wood:      { h: 28,  s: 0.38, l: 0.85 },
+  rubber:    { h: 228, s: 0.1, l: 0.55 },
+  grass:     { h: 96,  s: 0.42, l: 0.92 },
+  grass2:    { h: 82,  s: 0.45, l: 0.95 },
+  sand:      { h: 40,  s: 0.42 },
+  rock:      { h: 28,  s: 0.11, l: 0.9 },
+  water:     { h: 199, s: 0.58, l: 0.85 },
+  ore_iron:  { h: 212, s: 0.22 },
+  ore_copper:{ h: 18,  s: 0.65 },
+  ore_coal:  { h: 235, s: 0.08, l: 0.5 },
+  ore_stone: { h: 34,  s: 0.2 },
+  red:       { h: 356, s: 0.68 },
+  fire:      { h: 24,  s: 0.95, glow: true },
+  lamp:      { h: 128, s: 0.8,  glow: true },
+  energy:    { h: 186, s: 0.9,  glow: true },
+  sci_red:   { h: 356, s: 0.85, glow: true },
+  sci_green: { h: 130, s: 0.8,  glow: true },
+};
+const RAMPS = {};
+for (const k of Object.keys(MATERIALS)) RAMPS[k] = makeRamp(MATERIALS[k]);
+
+
+// ---------- geometry ----------
+const LIGHT = (() => { const v = [-0.32, 0.52, 0.8]; const n = Math.hypot(...v); return v.map(x => x / n); })();
+const VIEW = [1 / Math.sqrt(3), 1 / Math.sqrt(3), 1 / Math.sqrt(3)];
+const AX = { x: 0, y: 1, z: 2 };
+
+// rotate a genome authored facing +x by dir*90 degrees around the footprint centre
+function rotPt(p, dir, s) {
+  let [x, y, z] = p;
+  for (let i = 0; i < dir; i++) [x, y] = [s - y, x];
+  return [x, y, z];
+}
+function rotVec(v, dir) {
+  let [x, y, z] = v;
+  for (let i = 0; i < dir; i++) [x, y] = [-y, x];
+  return [x, y, z];
+}
+function rotAxis(a, dir) { return a === "z" ? "z" : (dir % 2 ? (a === "x" ? "y" : "x") : a); }
+
+// Resolve a part for a given facing and animation phase into a flat primitive.
+function resolve(part, dir, size, phase) {
+  const wave = part.wave === "saw" ? phase : Math.sin(phase * Math.PI * 2) * 0.5 + 0.5;
+  const mv = part.move ? rotVec(part.move.map(v => v * wave), dir) : [0, 0, 0];
+  const p = { mat: part.mat, pat: part.pat, part, spin: (part.spin || 0) * phase * Math.PI * 2 };
+  if (part.box) {
+    const b = part.box;
+    const a = rotPt([b[0], b[1], b[2]], dir, size), c = rotPt([b[3], b[4], b[5]], dir, size);
+    p.kind = 0;
+    p.min = [Math.min(a[0], c[0]) + mv[0], Math.min(a[1], c[1]) + mv[1], Math.min(a[2], c[2]) + mv[2]];
+    p.max = [Math.max(a[0], c[0]) + mv[0], Math.max(a[1], c[1]) + mv[1], Math.max(a[2], c[2]) + mv[2]];
+  } else if (part.cyl || part.gear) {
+    p.kind = part.gear ? 2 : 1;
+    p.axis = AX[rotAxis(part.cyl || part.gear, dir)];
+    const c = rotPt(part.c, dir, size);
+    p.c = [c[0] + mv[0], c[1] + mv[1], c[2] + mv[2]];
+    p.r = part.r; p.h = part.h; p.teeth = part.teeth || 0; p.rin = part.rin || part.r * 0.78;
+  } else if (part.sphere) {
+    p.kind = 3;
+    const c = rotPt(part.c, dir, size);
+    p.c = [c[0] + mv[0], c[1] + mv[1], c[2] + mv[2]];
+    p.r = part.r;
+  }
+  return p;
+}
+
+// ray o + t*d, returns {t, n, l (local point)} or null
+function hitBox(p, o, d) {
+  let tmin = -1e9, tmax = 1e9, nAxis = -1, nSign = 0;
+  for (let a = 0; a < 3; a++) {
+    if (Math.abs(d[a]) < 1e-9) { if (o[a] < p.min[a] || o[a] > p.max[a]) return null; continue; }
+    let t1 = (p.min[a] - o[a]) / d[a], t2 = (p.max[a] - o[a]) / d[a], s = -1;
+    if (t1 > t2) { const tt = t1; t1 = t2; t2 = tt; s = 1; }
+    if (t1 > tmin) { tmin = t1; nAxis = a; nSign = s; }
+    if (t2 < tmax) tmax = t2;
+    if (tmin > tmax) return null;
+  }
+  if (tmax < 1e-6) return null;
+  const t = tmin > 1e-6 ? tmin : tmax;
+  const n = [0, 0, 0]; n[nAxis] = nSign;
+  return { t, n };
+}
+
+function hitCylRaw(c, axis, r, h, o, d) {
+  const u = (axis + 1) % 3, v = (axis + 2) % 3;
+  const ou = o[u] - c[u], ov = o[v] - c[v], du = d[u], dv = d[v];
+  let best = null;
+  const A = du * du + dv * dv;
+  if (A > 1e-12) {
+    const B = 2 * (ou * du + ov * dv), Cc = ou * ou + ov * ov - r * r, D = B * B - 4 * A * Cc;
+    if (D >= 0) {
+      const sq = Math.sqrt(D);
+      for (const t of [(-B - sq) / (2 * A), (-B + sq) / (2 * A)]) {
+        if (t <= 1e-6) continue;
+        const w = o[axis] + d[axis] * t - c[axis];
+        if (Math.abs(w) <= h) { const n = [0, 0, 0]; n[u] = (ou + du * t) / r; n[v] = (ov + dv * t) / r; best = { t, n }; break; }
+      }
+    }
+  }
+  if (Math.abs(d[axis]) > 1e-12) {
+    for (const s of [-1, 1]) {
+      const t = (c[axis] + s * h - o[axis]) / d[axis];
+      if (t <= 1e-6 || (best && t >= best.t)) continue;
+      const pu = ou + du * t, pv = ov + dv * t;
+      if (pu * pu + pv * pv <= r * r) { const n = [0, 0, 0]; n[axis] = s; best = { t, n }; }
+    }
+  }
+  return best;
+}
+
+function angleAt(p, x) {
+  const u = (p.axis + 1) % 3, v = (p.axis + 2) % 3;
+  return Math.atan2(x[v] - p.c[v], x[u] - p.c[u]);
+}
+
+function hitPrim(p, o, d) {
+  if (p.kind === 0) return hitBox(p, o, d);
+  if (p.kind === 1) return hitCylRaw(p.c, p.axis, p.r, p.h, o, d);
+  if (p.kind === 2) {
+    // gear = solid inner disc + toothed outer ring (angular mask)
+    const inner = hitCylRaw(p.c, p.axis, p.rin, p.h, o, d);
+    const outer = hitCylRaw(p.c, p.axis, p.r, p.h, o, d);
+    if (outer && (!inner || outer.t < inner.t)) {
+      const x = [o[0] + d[0] * outer.t, o[1] + d[1] * outer.t, o[2] + d[2] * outer.t];
+      const a = angleAt(p, x) - p.spin;
+      const k = ((a / (Math.PI * 2)) * p.teeth % 1 + 1) % 1;
+      if (k < 0.5) return outer;
+    }
+    return inner;
+  }
+  // sphere
+  const oc = [o[0] - p.c[0], o[1] - p.c[1], o[2] - p.c[2]];
+  const A = d[0] * d[0] + d[1] * d[1] + d[2] * d[2];
+  const b = oc[0] * d[0] + oc[1] * d[1] + oc[2] * d[2], cc = oc[0] ** 2 + oc[1] ** 2 + oc[2] ** 2 - p.r * p.r;
+  const D = b * b - A * cc;
+  if (D < 0) return null;
+  let t = (-b - Math.sqrt(D)) / A;
+  if (t <= 1e-6) t = (-b + Math.sqrt(D)) / A;
+  if (t <= 1e-6) return null;
+  const x = [oc[0] + d[0] * t, oc[1] + d[1] * t, oc[2] + d[2] * t];
+  return { t, n: [x[0] / p.r, x[1] / p.r, x[2] / p.r] };
+}
+
+function castAll(prims, o, d, skip = null) {
+  let best = null, bp = null;
+  for (const p of prims) {
+    if (p === skip) continue;
+    const h = hitPrim(p, o, d);
+    if (h && (!best || h.t < best.t)) { best = h; bp = p; }
+  }
+  return best ? { ...best, p: bp } : null;
+}
+
+// ---------- surface patterns: return ramp-step offset, or {mat} override ----------
+const frac = x => x - Math.floor(x);
+function pattern(p, x, n, phase, seed) {
+  switch (p.pat) {
+    case "rivets": {
+      if (!p.min) {
+        // cylinders: rivet rings near both ends
+        const w = x[p.axis] - p.c[p.axis];
+        const ring = Math.abs(Math.abs(w) - p.h * 0.75) < 0.04;
+        return ring && frac(angleAt(p, x) / (Math.PI * 2) * 12) < 0.4 ? 2 : 0;
+      }
+      if (Math.abs(n[2]) > 0.5) return 0;
+      const a = Math.abs(n[0]) > 0.5 ? 1 : 0, w = x[a], z = x[2];
+      const nearEdge = Math.min(Math.abs(w - p.min[a]), Math.abs(w - p.max[a])) < 0.09;
+      const zRow = Math.abs(frac(z * 4) - 0.5) < 0.12;
+      return nearEdge && zRow ? 2 : 0;
+    }
+    case "panel": {
+      // recessed seams every half tile on side faces, bevel on top edges
+      if (Math.abs(n[2]) > 0.5) {
+        const e = Math.min(x[0] - p.min[0], p.max[0] - x[0], x[1] - p.min[1], p.max[1] - x[1]);
+        return e < 0.05 ? 1 : 0;
+      }
+      const a = Math.abs(n[0]) > 0.5 ? 1 : 0;
+      return Math.abs(frac(x[a] * 2) - 0.5) > 0.47 ? -2 : (x[2] > p.max[2] - 0.05 ? 1 : 0);
+    }
+    case "grille": {
+      if (Math.abs(n[2]) > 0.5) return frac(x[0] * 6 + x[1] * 6) < 0.45 ? -3 : 0;
+      return frac(x[2] * 8) < 0.45 ? -3 : 0;
+    }
+    case "hazard":
+      return frac((x[0] + x[1] + x[2]) * 3) < 0.5 ? { mat: "dark" } : 0;
+    case "stripes": {
+      if (p.kind === 0) return 0;
+      const k = frac((angleAt(p, x) - p.spin) / (Math.PI * 2) * 6);
+      return k < 0.5 ? -1 : 0;
+    }
+    case "screw": {
+      // helical auger: stripes along the axis that slide with phase
+      const k = frac(x[p.axis] * 5 + (angleAt(p, x)) / (Math.PI * 2) + phase);
+      return k < 0.45 ? -2 : 0;
+    }
+    case "belt": {
+      // chevrons on the top face scrolling along the local +x of the genome
+      if (n[2] < 0.5) return frac((x[0] + x[1]) * 6) < 0.2 ? -1 : 0;
+      const along = p.part.alongY ? x[1] : x[0];
+      const across = p.part.alongY ? x[0] : x[1];
+      const sgn = p.part.rev ? -1 : 1;
+      const v = frac(sgn * along * 2 - phase * 2 + Math.abs(across - 0.5) * 1.6);
+      if (across < 0.14 || across > 0.86) return -1;
+      return v < 0.2 ? { mat: "steel" } : v > 0.85 ? -1 : 0;
+    }
+    case "planks":
+      return frac(x[2] * 7 + (p.min ? p.min[0] : 0)) < 0.12 ? -2 : 0;
+    case "bricks": {
+      if (Math.abs(n[2]) > 0.5) return 0;
+      const a = Math.abs(n[0]) > 0.5 ? 1 : 0;
+      const row = Math.floor(x[2] * 6);
+      const col = frac(x[a] * 3 + (row % 2) * 0.5);
+      return frac(x[2] * 6) < 0.18 || col < 0.08 ? -2 : (hash3(row, Math.floor(x[a] * 3 + (row % 2) * 0.5), seed) > 0.7 ? 1 : 0);
+    }
+    case "noise":
+      return Math.floor(hash3(Math.floor(x[0] * 16), Math.floor(x[1] * 16) * 7 + Math.floor(x[2] * 16), seed) * 3) - 1;
+    case "water": {
+      const w = Math.sin((x[0] * 5 + x[1] * 3) + phase * Math.PI * 2) + Math.sin((x[0] * 2 - x[1] * 6) - phase * Math.PI * 2 * 2);
+      return w > 1.35 ? 2 : w < -1.1 ? -1 : 0;
+    }
+    case "blades": {
+      const hsh = hash3(Math.floor(x[0] * 16), Math.floor(x[1] * 16), seed);
+      return hsh > 0.86 ? 1 : hsh < 0.1 ? -1 : 0;
+    }
+    default: return 0;
+  }
+}
+
+function hash3(a, b, s) {
+  let h = (a * 374761393 + b * 668265263 + s * 2246822519) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+
+const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map(v => v / 16 - 0.5);
+
+// ---------- bake ----------
+// opts: phase, dir, active, quantize, dither, outline, shadows, groundShadow
+function bake(genome, opts = {}) {
+  const o = { phase: 0, dir: 0, active: true, quantize: true, dither: true, outline: true, shadows: true, groundShadow: true, seed: 1, ...opts };
+  const size = genome.size || 1;
+  const prims = genome.parts.filter(pt => !pt.when || pt.when === (o.active ? "on" : "off")).map(pt => resolve(pt, o.dir, size, o.phase));
+  // bounds: footprint plus every part's box (generous for animation)
+  let x0 = 0, y0 = 0, x1 = size, y1 = size, z1 = genome.height || 1;
+  for (const p of prims) {
+    const lo = p.min || [p.c[0] - p.r - (p.h || 0), p.c[1] - p.r - (p.h || 0), p.c[2] - p.r - (p.h || 0)];
+    const hi = p.max || [p.c[0] + p.r + (p.h || 0), p.c[1] + p.r + (p.h || 0), p.c[2] + p.r + (p.h || 0)];
+    x0 = Math.min(x0, lo[0]); y0 = Math.min(y0, lo[1]); x1 = Math.max(x1, hi[0]); y1 = Math.max(y1, hi[1]); z1 = Math.max(z1, hi[2]);
+  }
+  const zmin = genome.zmin ?? 0;
+  const pad = 2;
+  const sxMin = Math.floor((x0 - y1) * 16) - pad, sxMax = Math.ceil((x1 - y0) * 16) + pad;
+  const syMin = Math.floor((x0 + y0) * 8 - z1 * Z_PX) - pad, syMax = Math.ceil((x1 + y1) * 8 - zmin * Z_PX) + pad;
+  const W = sxMax - sxMin, H = syMax - syMin;
+  const rgba = new Uint8ClampedArray(W * H * 4);
+  const depth = new Float32Array(W * H).fill(-1e9);
+  const partId = new Int16Array(W * H).fill(-1);
+  const shadeIdx = new Int8Array(W * H).fill(-1);
+  const matOf = new Array(W * H);
+  const dd = [-1, -1, -1];
+  const T = z1 + 4;
+  const sh = o.shadowCatch ?? 0.6;
+
+  for (let py = 0; py < H; py++) for (let px = 0; px < W; px++) {
+    const sx = px + sxMin + 0.5, sy = py + syMin + 0.5;
+    const gx = (sx / 16 + sy / 8) / 2, gy = (sy / 8 - sx / 16) / 2;
+    const org = [gx + T, gy + T, T];
+    const hit = castAll(prims, org, dd);
+    const i = py * W + px;
+    if (!hit) {
+      // contact shadow on the ground plane under the object
+      if (o.groundShadow && o.shadows && gx > x0 - sh && gy > y0 - sh && gx < x1 + sh && gy < y1 + sh) {
+        const g = [gx, gy, 0.001];
+        if (castAll(prims, g, LIGHT)) { rgba[i * 4] = 18; rgba[i * 4 + 1] = 20; rgba[i * 4 + 2] = 46; rgba[i * 4 + 3] = 92; }
+      }
+      continue;
+    }
+    const x = [org[0] - hit.t, org[1] - hit.t, org[2] - hit.t];
+    let n = hit.n;
+    const p = hit.p;
+    let mat = p.mat;
+    let step = 0;
+    const pr = pattern(p, x, n, o.phase, o.seed + prims.indexOf(p) * 17);
+    if (typeof pr === "object") mat = pr.mat; else step = pr;
+    const M = MATERIALS[mat];
+    let v;
+    if (M.glow) {
+      v = o.active ? 0.66 + 0.16 * Math.sin(o.phase * Math.PI * 2 * 2) + 0.12 * Math.max(0, n[2]) : 0.08;
+      if (!o.active) mat = "dark";
+    } else {
+      let lam = Math.max(0, n[0] * LIGHT[0] + n[1] * LIGHT[1] + n[2] * LIGHT[2]);
+      if (o.shadows && lam > 0) {
+        const so = [x[0] + n[0] * 0.002, x[1] + n[1] * 0.002, x[2] + n[2] * 0.002];
+        if (castAll(prims, so, LIGHT)) lam *= 0.25;
+      }
+      v = 0.22 + 0.7 * lam;
+      if (M.metal) {
+        // Blinn highlight: one bright ramp step where the half vector lines up
+        const hv = [LIGHT[0] + VIEW[0], LIGHT[1] + VIEW[1], LIGHT[2] + VIEW[2]], hl = Math.hypot(...hv);
+        const spec = Math.pow(Math.max(0, (n[0] * hv[0] + n[1] * hv[1] + n[2] * hv[2]) / hl), 24);
+        v += spec * 0.5;
+      }
+      if (o.shadows) v -= 0.12 * Math.max(0, 1 - (x[2] - zmin) / 0.25); // contact darkening
+    }
+    depth[i] = hit.t === undefined ? 0 : -hit.t;
+    partId[i] = prims.indexOf(p);
+    matOf[i] = mat;
+    const ramp = RAMPS[mat];
+    if (o.quantize) {
+      const dz = o.dither ? BAYER[(py & 3) * 4 + (px & 3)] * 0.55 : 0;
+      let k = Math.round(v * 5 + dz) + step;
+      k = Math.max(0, Math.min(5, k));
+      shadeIdx[i] = k;
+      const c = ramp[k];
+      rgba[i * 4] = c[0]; rgba[i * 4 + 1] = c[1]; rgba[i * 4 + 2] = c[2]; rgba[i * 4 + 3] = 255;
+    } else {
+      // continuous baseline: interpolate the ramp, no quantisation
+      const f = Math.max(0, Math.min(5, v * 5 + step)), a = Math.floor(Math.min(4, f)), t = f - a;
+      for (let ch = 0; ch < 3; ch++) rgba[i * 4 + ch] = ramp[a][ch] * (1 - t) + ramp[a + 1][ch] * t;
+      rgba[i * 4 + 3] = 255;
+      shadeIdx[i] = Math.round(f);
+    }
+  }
+
+  if (o.outline) {
+    // selective outline: silhouette pixels take their own material's darkest
+    // step; interior creases (depth jumps between parts) drop two steps.
+    const out = new Uint8ClampedArray(rgba);
+    for (let py = 0; py < H; py++) for (let px = 0; px < W; px++) {
+      const i = py * W + px;
+      if (partId[i] < 0) continue;
+      let edge = false, crease = false;
+      for (const [ax, ay] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = px + ax, ny = py + ay;
+        if (nx < 0 || ny < 0 || nx >= W || ny >= H) { edge = true; continue; }
+        const j = ny * W + nx;
+        if (partId[j] < 0) edge = true;
+        else if (partId[j] !== partId[i] && depth[j] - depth[i] > 0.18) crease = true;
+      }
+      if (edge || crease) {
+        const ramp = RAMPS[matOf[i]];
+        const k = edge ? 0 : Math.max(0, shadeIdx[i] - 2);
+        const c = ramp[k];
+        out[i * 4] = edge ? c[0] * 0.7 : c[0]; out[i * 4 + 1] = edge ? c[1] * 0.7 : c[1]; out[i * 4 + 2] = edge ? c[2] * 0.75 : c[2]; out[i * 4 + 3] = 255;
+      }
+    }
+    rgba.set(out);
+  }
+  // ox, oy: where world (0,0,0) lands inside the sprite
+  return { w: W, h: H, rgba, ox: -sxMin, oy: -syMin };
+}
+
+// uniformly scale a genome (used for item readability)
+function scaleGenome(g, k) {
+  const sc = a => a.map(v => v * k);
+  return { ...g, parts: g.parts.map(p => ({ ...p, box: p.box && sc(p.box), c: p.c && sc(p.c), r: p.r && p.r * k, rin: p.rin && p.rin * k, h: p.h && p.h * k })) };
+}
+
+// world tile coords -> screen pixels (relative to world origin)
+function project(x, y, z = 0) { return [(x - y) * 16, (x + y) * 8 - z * Z_PX]; }
+
+return { makeRamp, bake, scaleGenome, project, TILE_W, TILE_H, Z_PX, MATERIALS, RAMPS };
+});
+__def("art.js", function () {
+// Factory Universe genomes. Authored facing +x (the output side). Every
+// animated part is bound to a phase the renderer advances from sim state:
+// drills spin only while mining, smelter fire only burns while smelting, etc.
+//   spin: turns per animation cycle   move: offset vector * wave(phase)
+//   when: "on" | "off" parts that exist only in that power state
+
+const GENOMES = {
+  drill: {
+    size: 2, height: 2.0,
+    parts: [
+      { box: [0.08, 0.08, 0, 1.92, 1.92, 0.22], mat: "dark", pat: "panel" },
+      { box: [0.2, 0.2, 0.22, 1.5, 1.8, 0.95], mat: "orange", pat: "panel" },
+      { box: [0.2, 0.2, 0.95, 1.5, 1.8, 1.05], mat: "hazard", pat: "hazard" },
+      { cyl: "z", c: [0.85, 1.0, 1.35], r: 0.36, h: 0.3, mat: "steel", pat: "stripes", spin: 1 },
+      { gear: "z", c: [0.85, 1.0, 1.72], r: 0.42, rin: 0.32, h: 0.07, teeth: 10, mat: "brass", spin: 1 },
+      { cyl: "z", c: [0.85, 1.0, 1.85], r: 0.12, h: 0.06, mat: "dark" },
+      { gear: "y", c: [0.55, 1.86, 0.62], r: 0.3, rin: 0.22, h: 0.06, teeth: 8, mat: "brass", spin: -2 },
+      { box: [1.5, 0.6, 0.3, 1.95, 1.4, 0.55], mat: "steel", pat: "rivets" },
+      { box: [1.55, 0.7, 0.55, 1.95, 1.3, 0.62], mat: "dark" },
+      { sphere: true, c: [0.35, 0.35, 1.12], r: 0.08, mat: "lamp" },
+    ],
+  },
+  smelter: {
+    size: 2, height: 2.6,
+    parts: [
+      { box: [0.06, 0.06, 0, 1.94, 1.94, 0.18], mat: "stone", pat: "noise" },
+      { box: [0.15, 0.15, 0.18, 1.7, 1.85, 1.25], mat: "brick", pat: "bricks" },
+      { box: [0.1, 0.1, 1.25, 1.75, 1.9, 1.38], mat: "dark", pat: "rivets" },
+      { box: [1.7, 0.55, 0.25, 1.82, 1.45, 0.85], mat: "dark" },
+      { box: [1.69, 0.68, 0.3, 1.83, 1.32, 0.72], mat: "fire", when: "on" },
+      { cyl: "z", c: [0.6, 0.6, 1.9], r: 0.26, h: 0.55, mat: "brick", pat: "bricks" },
+      { cyl: "z", c: [0.6, 0.6, 2.46], r: 0.31, h: 0.05, mat: "dark" },
+      { cyl: "z", c: [0.6, 0.6, 2.5], r: 0.18, h: 0.03, mat: "fire", when: "on" },
+      { box: [1.75, 0.75, 0.05, 1.98, 1.25, 0.25], mat: "steel" },
+      { box: [0.9, 0.9, 1.38, 1.55, 1.6, 1.55], mat: "copper", pat: "panel" },
+    ],
+  },
+  assembler: {
+    size: 2, height: 2.0,
+    parts: [
+      { box: [0.06, 0.06, 0, 1.94, 1.94, 0.2], mat: "dark", pat: "panel" },
+      { box: [0.15, 0.15, 0.2, 1.85, 1.85, 0.95], mat: "blue", pat: "panel" },
+      { box: [0.3, 0.3, 0.95, 1.7, 1.7, 1.02], mat: "steel", pat: "grille" },
+      { box: [0.45, 0.45, 1.02, 1.55, 1.55, 1.08], mat: "dark" },
+      { cyl: "z", c: [1, 1, 1.2], r: 0.12, h: 0.14, mat: "steel" },
+      { box: [0.7, 0.92, 1.3, 1.5, 1.08, 1.4], mat: "orange", move: [-0.35, 0, 0] },
+      { cyl: "z", c: [0.6, 1.0, 1.18], r: 0.07, h: 0.12, mat: "steel", move: [0, 0, 0.12] },
+      { gear: "x", c: [1.88, 0.55, 0.6], r: 0.25, rin: 0.18, h: 0.05, teeth: 8, mat: "brass", spin: 2 },
+      { gear: "x", c: [1.88, 0.98, 0.6], r: 0.2, rin: 0.14, h: 0.05, teeth: 6, mat: "brass", spin: -2.6 },
+      { box: [1.85, 1.2, 0.3, 1.96, 1.7, 0.8], mat: "energy", when: "on" },
+      { box: [1.85, 1.2, 0.3, 1.96, 1.7, 0.8], mat: "dark", when: "off" },
+      { sphere: true, c: [0.3, 0.3, 1.0], r: 0.07, mat: "lamp" },
+    ],
+  },
+  generator: {
+    size: 2, height: 2.4,
+    parts: [
+      { box: [0.05, 0.05, 0, 1.95, 1.95, 0.18], mat: "dark", pat: "panel" },
+      { cyl: "x", c: [0.95, 0.85, 0.75], r: 0.55, h: 0.78, mat: "copper", pat: "stripes" },
+      { cyl: "x", c: [0.95, 0.85, 0.75], r: 0.6, h: 0.06, mat: "dark" },
+      { cyl: "x", c: [0.4, 0.85, 0.75], r: 0.6, h: 0.05, mat: "dark" },
+      { cyl: "x", c: [1.5, 0.85, 0.75], r: 0.6, h: 0.05, mat: "dark" },
+      { gear: "y", c: [0.8, 1.72, 0.7], r: 0.5, rin: 0.4, h: 0.07, teeth: 14, mat: "steel", spin: 1 },
+      { cyl: "y", c: [0.8, 1.8, 0.7], r: 0.12, h: 0.06, mat: "brass" },
+      { box: [0.15, 1.45, 0.18, 1.85, 1.62, 0.3], mat: "steel" },
+      { cyl: "z", c: [1.55, 1.5, 1.4], r: 0.17, h: 0.85, mat: "dark", pat: "rivets" },
+      { box: [1.6, 0.3, 0.2, 1.92, 1.3, 0.6], mat: "dark" },
+      { box: [1.88, 0.45, 0.28, 1.94, 1.15, 0.52], mat: "fire", when: "on" },
+      { sphere: true, c: [0.2, 0.2, 0.3], r: 0.07, mat: "lamp" },
+    ],
+  },
+  lab: {
+    size: 2, height: 2.2,
+    parts: [
+      { box: [0.06, 0.06, 0, 1.94, 1.94, 0.25], mat: "dark", pat: "panel" },
+      { cyl: "z", c: [1, 1, 0.4], r: 0.86, h: 0.15, mat: "steel", pat: "rivets" },
+      { sphere: true, c: [1, 1, 0.55], r: 0.78, mat: "glass" },
+      { gear: "z", c: [1, 1, 0.72], r: 0.86, rin: 0.8, h: 0.04, teeth: 18, mat: "brass", spin: 0.5 },
+      { sphere: true, c: [1, 1, 1.0], r: 0.22, mat: "energy", when: "on" },
+      { cyl: "z", c: [1, 1, 1.38], r: 0.06, h: 0.12, mat: "steel" },
+      { sphere: true, c: [1, 1, 1.52], r: 0.07, mat: "lamp" },
+    ],
+  },
+  pole: {
+    size: 1, height: 2.2,
+    parts: [
+      { box: [0.4, 0.4, 0, 0.6, 0.6, 1.9], mat: "wood", pat: "planks" },
+      { box: [0.2, 0.44, 1.65, 0.8, 0.56, 1.75], mat: "wood" },
+      { cyl: "z", c: [0.25, 0.5, 1.82], r: 0.05, h: 0.07, mat: "copper" },
+      { cyl: "z", c: [0.75, 0.5, 1.82], r: 0.05, h: 0.07, mat: "copper" },
+    ],
+  },
+  solar: {
+    size: 2, height: 1.2,
+    parts: [
+      { box: [0.1, 0.1, 0, 1.9, 1.9, 0.12], mat: "dark" },
+      { box: [0.9, 0.9, 0.12, 1.1, 1.1, 0.45], mat: "steel" },
+      { box: [0.12, 0.12, 0.45, 1.88, 1.88, 0.55], mat: "steel" },
+      { box: [0.18, 0.18, 0.55, 1.82, 1.82, 0.58], mat: "blue", pat: "grille" },
+    ],
+  },
+  hub: {
+    size: 3, height: 3.4,
+    parts: [
+      { box: [0.05, 0.05, 0, 2.95, 2.95, 0.3], mat: "dark", pat: "panel" },
+      { box: [0.2, 0.2, 0.3, 2.8, 2.8, 0.75], mat: "steel", pat: "panel" },
+      { box: [0.2, 0.2, 0.75, 2.8, 2.8, 0.82], mat: "hazard", pat: "hazard" },
+      { cyl: "z", c: [1.5, 1.5, 1.0], r: 1.0, h: 0.2, mat: "dark", pat: "rivets" },
+      { gear: "z", c: [1.5, 1.5, 1.25], r: 0.95, rin: 0.85, h: 0.05, teeth: 24, mat: "brass", spin: 0.25 },
+      { cyl: "z", c: [1.5, 1.5, 1.6], r: 0.55, h: 0.35, mat: "steel", pat: "stripes", spin: -0.5 },
+      { cyl: "z", c: [1.5, 1.5, 2.4], r: 0.28, h: 0.5, mat: "energy" },
+      { cyl: "z", c: [1.5, 1.5, 2.95], r: 0.4, h: 0.05, mat: "dark" },
+      { box: [0.25, 0.25, 0.82, 0.55, 0.55, 1.5], mat: "orange", pat: "panel" },
+      { box: [2.45, 0.25, 0.82, 2.75, 0.55, 1.5], mat: "orange", pat: "panel" },
+      { box: [0.25, 2.45, 0.82, 0.55, 2.75, 1.5], mat: "orange", pat: "panel" },
+      { box: [2.45, 2.45, 0.82, 2.75, 2.75, 1.5], mat: "orange", pat: "panel" },
+    ],
+  },
+  belt: {
+    size: 1, height: 0.3,
+    parts: [
+      { box: [0, 0.06, 0, 1, 0.94, 0.16], mat: "dark" },
+      { box: [0, 0.12, 0.16, 1, 0.88, 0.2], mat: "rubber", pat: "belt" },
+      { box: [0, 0.02, 0.06, 1, 0.1, 0.24], mat: "steel" },
+      { box: [0, 0.9, 0.06, 1, 0.98, 0.24], mat: "steel" },
+    ],
+  },
+};
+
+// Items: tiny genomes, centred on (0,0); rendered without ground shadow.
+const ITEM_GENOMES = {
+  iron_ore:     { parts: [{ sphere: true, c: [0, 0, 0.1], r: 0.11, mat: "ore_iron", pat: "noise" }, { sphere: true, c: [0.07, -0.05, 0.07], r: 0.07, mat: "ore_iron" }] },
+  copper_ore:   { parts: [{ sphere: true, c: [0, 0, 0.1], r: 0.11, mat: "ore_copper", pat: "noise" }, { sphere: true, c: [-0.06, 0.06, 0.07], r: 0.07, mat: "ore_copper" }] },
+  coal:         { parts: [{ sphere: true, c: [0, 0, 0.1], r: 0.11, mat: "ore_coal", pat: "noise" }, { sphere: true, c: [0.06, 0.05, 0.06], r: 0.06, mat: "ore_coal" }] },
+  stone:        { parts: [{ sphere: true, c: [0, 0, 0.09], r: 0.1, mat: "ore_stone", pat: "noise" }] },
+  iron_plate:   { parts: [{ box: [-0.13, -0.13, 0, 0.13, 0.13, 0.06], mat: "steel" }] },
+  copper_plate: { parts: [{ box: [-0.13, -0.13, 0, 0.13, 0.13, 0.06], mat: "copper" }] },
+  brick:        { parts: [{ box: [-0.14, -0.08, 0, 0.14, 0.08, 0.09], mat: "brick" }] },
+  gear:         { parts: [{ gear: "z", c: [0, 0, 0.04], r: 0.14, rin: 0.1, h: 0.04, teeth: 8, mat: "steel" }, { cyl: "z", c: [0, 0, 0.085], r: 0.04, h: 0.01, mat: "dark" }] },
+  wire:         { parts: [{ cyl: "z", c: [0, 0, 0.06], r: 0.1, h: 0.06, mat: "copper", pat: "stripes" }, { cyl: "z", c: [0, 0, 0.125], r: 0.04, h: 0.01, mat: "dark" }] },
+  circuit:      { parts: [{ box: [-0.13, -0.1, 0, 0.13, 0.1, 0.04], mat: "green", pat: "grille" }, { box: [-0.05, -0.04, 0.04, 0.05, 0.04, 0.07], mat: "dark" }] },
+  sci_red:      { parts: [{ cyl: "z", c: [0, 0, 0.07], r: 0.08, h: 0.07, mat: "sci_red" }, { cyl: "z", c: [0, 0, 0.17], r: 0.035, h: 0.04, mat: "glass" }] },
+  sci_green:    { parts: [{ cyl: "z", c: [0, 0, 0.07], r: 0.08, h: 0.07, mat: "sci_green" }, { cyl: "z", c: [0, 0, 0.17], r: 0.035, h: 0.04, mat: "glass" }] },
+};
+
+// Terrain tiles: one block per tile; variation by seed.
+const TILE_GENOMES = {
+  grass: { size: 1, height: 0.1, parts: [{ box: [0, 0, -0.25, 1, 1, 0], mat: "grass", pat: "blades" }] },
+  grass2:{ size: 1, height: 0.1, parts: [{ box: [0, 0, -0.25, 1, 1, 0], mat: "grass2", pat: "blades" }] },
+  sand:  { size: 1, height: 0.1, parts: [{ box: [0, 0, -0.25, 1, 1, 0], mat: "sand", pat: "noise" }] },
+  water: { size: 1, height: 0.1, zmin: -0.3, parts: [{ box: [0, 0, -0.3, 1, 1, -0.12], mat: "water", pat: "water" }] },
+  rock:  { size: 1, height: 0.9, parts: [{ box: [0, 0, -0.25, 1, 1, 0.35], mat: "rock", pat: "noise" }, { box: [0.15, 0.2, 0.35, 0.8, 0.85, 0.6], mat: "rock", pat: "noise" }] },
+};
+
+// ore scatter: a few lumps sitting on a grass tile, coloured by ore
+function oreGenome(mat, seed) {
+  const parts = [];
+  let s = seed * 9301 + 49297;
+  const r = () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
+  for (let k = 0; k < 3; k++) {
+    const R = 0.11 + r() * 0.07;
+    parts.push({ sphere: true, c: [0.2 + r() * 0.6, 0.2 + r() * 0.6, R * 0.35], r: R, mat, pat: "noise" });
+  }
+  return { size: 1, height: 0.3, parts };
+}
+
+return { oreGenome, GENOMES, ITEM_GENOMES, TILE_GENOMES };
+});
+__def("sfx.js", function () {
+// Procedural SFX (Web Audio). No samples: every sound is synthesised, so it
+// ships with the code and can be retuned like any other parameter.
+class Sfx {
+  constructor() { this.ctx = null; this.last = {}; this.hum = null; }
+  unlock() {
+    if (this.ctx) { if (this.ctx.state === "suspended") this.ctx.resume(); return; }
+    try {
+      this.ctx = new AudioContext();
+      this.master = this.ctx.createGain(); this.master.gain.value = 0.5; this.master.connect(this.ctx.destination);
+      this.startHum();
+    } catch (e) { this.ctx = null; }
+  }
+  noise(dur) {
+    const b = this.ctx.createBuffer(1, Math.ceil(this.ctx.sampleRate * dur), this.ctx.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    const s = this.ctx.createBufferSource(); s.buffer = b; return s;
+  }
+  env(node, t, a, peak, dec) {
+    const g = this.ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + a + dec);
+    node.connect(g); return g;
+  }
+  out(node, pan = 0) {
+    const p = this.ctx.createStereoPanner ? this.ctx.createStereoPanner() : null;
+    if (p) { p.pan.value = pan; node.connect(p); p.connect(this.master); } else node.connect(this.master);
+  }
+  tone(type, f0, f1, t, dur, peak, pan) {
+    const o = this.ctx.createOscillator(); o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    this.out(this.env(o, t, 0.005, peak, dur), pan); o.start(t); o.stop(t + dur + 0.05);
+  }
+  play(kind, pan = 0) {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    const gap = { smelt: 0.18, craft: 0.09, build: 0.03, remove: 0.03, click: 0.03, research: 0.5 }[kind] || 0.05;
+    if (this.last[kind] && t - this.last[kind] < gap) return;
+    this.last[kind] = t;
+    if (kind === "build") {
+      this.tone("square", 180, 70, t, 0.09, 0.18, pan);
+      const n = this.noise(0.08), f = this.ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 1400; n.connect(f);
+      this.out(this.env(f, t, 0.002, 0.3, 0.07), pan); n.start(t);
+    } else if (kind === "remove") {
+      this.tone("triangle", 260, 520, t, 0.08, 0.15, pan);
+    } else if (kind === "click") {
+      this.tone("square", 900, 600, t, 0.025, 0.06, pan);
+    } else if (kind === "craft") {
+      // ratchet click + small metallic ping
+      this.tone("square", 1400 + Math.random() * 300, 900, t, 0.03, 0.05, pan);
+      this.tone("sine", 2100 + Math.random() * 200, 2000, t + 0.01, 0.12, 0.035, pan);
+    } else if (kind === "smelt") {
+      const n = this.noise(0.25), f = this.ctx.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 500; f.Q.value = 0.7; n.connect(f);
+      this.out(this.env(f, t, 0.02, 0.06, 0.22), pan); n.start(t);
+    } else if (kind === "research") {
+      [523, 659, 784, 1046].forEach((fq, i) => this.tone("triangle", fq, fq, t + i * 0.09, 0.35, 0.12, 0));
+    }
+  }
+  startHum() {
+    const c = this.ctx;
+    const n = this.noise(2); n.loop = true;
+    const f = c.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 220;
+    const o = c.createOscillator(); o.type = "sawtooth"; o.frequency.value = 55;
+    const of = c.createBiquadFilter(); of.type = "lowpass"; of.frequency.value = 160;
+    const g = c.createGain(); g.gain.value = 0;
+    n.connect(f); f.connect(g); o.connect(of); of.connect(g); g.connect(this.master);
+    n.start(); o.start();
+    this.hum = g;
+  }
+  // factory hum follows the number of working machines (real sim state)
+  ambient(st) {
+    if (!this.hum || !this.ctx) return;
+    let n = 0; for (const id of st.order) { const e = st.ents.get(id); if (e.working && e.type !== "belt") n++; }
+    const target = Math.min(0.12, 0.012 * Math.sqrt(n));
+    this.hum.gain.setTargetAtTime(target, this.ctx.currentTime, 0.4);
+  }
+}
+
+return { Sfx };
+});
+__def("../../qa/bot.mjs", function () {
+// Autonomous playtest bot: builds a starter factory through the same public
+// commands a player uses, so a failure here is a real gameplay failure
+// (unbuildable layout, starved machine, softlock), not a test artefact.
+const { build, canBuild, setRecipe, setResearch, entAt, frontTiles, step } = __req("../../engine/sim/factory.js");
+const { findSpot, routeBelt, poleChain, dirToward, patchCentre } = __req("../../engine/sim/planner.js");
+
+const ORE = { iron_ore: 1, copper_ore: 2, coal: 3, stone: 4 };
+
+function hub(st) { return entAt(st, st.W / 2, st.H / 2); }
+
+// waits (runs the sim) up to `patience` seconds for the hub to afford it
+function place(st, log, type, x, y, dir, patience = 600) {
+  let r = build(st, type, x, y, dir);
+  for (let t = 0; !r.ok && r.reason.startsWith("not enough") && t < patience; t++) { run(st, 1); r = build(st, type, x, y, dir); }
+  log.push(`${type}@${x},${y} d${dir}: ${r.ok ? "ok" : r.reason}`);
+  return r.ok ? st.ents.get(r.id) : null;
+}
+
+// drill on `ore`, optional machine directly in front, then a belt to `target`.
+function line(st, log, ore, { machine = null, recipe = null, target, nearX, nearY, noRoute = false }) {
+  const H = hub(st);
+  const tgt = target || H;
+  const c = patchCentre(st, ORE[ore], nearX ?? tgt.x, nearY ?? tgt.y);
+  if (!c) { log.push("no patch for " + ore); return null; }
+  const chainOf = machine ? (Array.isArray(machine) ? machine : [machine]) : [];
+  const fits = (x, y) => {
+    if (st.ore[y * st.W + x] !== ORE[ore]) return false;
+    const dr = dirToward(x, y, tgt.x, tgt.y);
+    let px = x, py = y;
+    for (const m of chainOf) {
+      px += 2 * [1, 0, -1, 0][dr]; py += 2 * [0, 1, 0, -1][dr];
+      if (canBuild(st, m, px, py, true)) return false;
+    }
+    // the last machine's output tiles must not already belong to another line
+    const fr = frontTiles({ x: px, y: py, size: 2, dir: dr });
+    for (const [tx, ty] of fr) { const o = entAt(st, tx, ty); if (o && o !== tgt) return false; }
+    return true;
+  };
+  const drill = findSpot(st, "drill", c[0], c[1], fits, 14);
+  if (!drill) { log.push("no drill spot"); return null; }
+  const dir = dirToward(drill[0], drill[1], tgt.x, tgt.y);
+  const d = place(st, log, "drill", drill[0], drill[1], dir);
+  if (!d) return null;
+  let src = d;
+  const chain = machine ? (Array.isArray(machine) ? machine : [machine]) : [];
+  const recipes = Array.isArray(recipe) ? recipe : [recipe];
+  for (let k = 0; k < chain.length; k++) {
+    const [fx, fy] = frontTiles(src)[0];
+    const mx = dir === 2 ? fx - 1 : fx, my = dir === 3 ? fy - 1 : fy;
+    const m = place(st, log, chain[k], mx, my, dir);
+    if (!m) return null;
+    if (recipes[k]) setRecipe(st, m.id, recipes[k]);
+    src = m;
+  }
+  if (noRoute) return { drill: d, src };
+  const out = frontTiles(src);
+  if (entAt(st, out[0][0], out[0][1]) === tgt) return { drill: d, src };
+  for (const start of out) {
+    const path = routeBelt(st, start, tgt, src);
+    if (path) {
+      let ok = true;
+      for (const p of path) if (!place(st, [], "belt", p.x, p.y, p.dir)) { ok = false; break; }
+      log.push(`belt x${path.length}: ${ok ? "ok" : "FAILED"}`);
+      if (ok) return { drill: d, src, path };
+    }
+  }
+  log.push("no belt route");
+  return { drill: d, src };
+}
+
+function machinesOf(st, l) {
+  const out = [], seen = new Set([l.drill.id]);
+  let e = l.drill;
+  while (e && e !== l.src) {
+    const [fx, fy] = frontTiles(e)[0];
+    e = entAt(st, fx, fy);
+    if (!e || seen.has(e.id)) break;
+    seen.add(e.id); out.push(e);
+  }
+  return out;
+}
+
+function power(st, log, gen, targets) {
+  for (const t of targets) {
+    const p = poleChain(st, gen, t, (x, y) => !!place(st, [], "pole", x, y, 0));
+    log.push(`poles ${gen.type}->${t.type}: ${p ? p.length : "FAILED"}`);
+  }
+}
+
+function starterFactory(st) {
+  const log = [];
+  const H = hub(st);
+  // coal straight into a generator
+  const coal = patchCentre(st, ORE.coal, H.x, H.y);
+  const cd = findSpot(st, "drill", coal[0], coal[1], (x, y) => st.ore[y * st.W + x] === ORE.coal, 6);
+  const cdir = dirToward(cd[0], cd[1], H.x, H.y);
+  const drillC = place(st, log, "drill", cd[0], cd[1], cdir);
+  const [gx, gy] = frontTiles(drillC)[0];
+  const gen = place(st, log, "generator", cdir === 2 ? gx - 1 : gx, cdir === 3 ? gy - 1 : gy, cdir);
+  const a = line(st, log, "iron_ore", { machine: "smelter" });
+  const b = line(st, log, "copper_ore", { machine: "smelter" });
+  const c = line(st, log, "stone", { machine: "smelter" });
+  const g = line(st, log, "iron_ore", { machine: ["smelter", "assembler"], recipe: [null, "gear"] });
+  const ms = [drillC, a, b, c, g].flatMap(l => l && l.drill ? [l.drill, ...machinesOf(st, l)] : l ? [l] : []);
+  power(st, log, gen, ms);
+  return { log, gen, lines: [a, b, c, g] };
+}
+
+// Second stage: copper -> smelter -> science assembler -> lab in one row,
+// with gears belted in from a separate iron -> smelter -> gear assembler line.
+function scienceBlock(st, gen) {
+  const log = [];
+  const H = hub(st);
+  const sci = line(st, log, "copper_ore", { machine: ["smelter", "assembler", "lab"], recipe: [null, "sci_red", null], noRoute: true });
+  if (!sci) { log.push("no science row"); return { log }; }
+  const [asm, lab] = machinesOf(st, sci).slice(1);
+  const gl = line(st, log, "iron_ore", { machine: ["smelter", "assembler"], recipe: [null, "gear"], target: asm, nearX: asm.x, nearY: asm.y });
+  power(st, log, gen, [sci.drill, ...machinesOf(st, sci), ...(gl && gl.drill ? [gl.drill, ...machinesOf(st, gl)] : [])]);
+  setResearch(st, "logistics");
+  return { log, asm, lab, gearAsm: gl && gl.src };
+}
+
+function run(st, seconds) { for (let i = 0; i < seconds * 60; i++) step(st); st.events.length = 0; }
+
+return { hub, line, power, starterFactory, scienceBlock, run };
+});
+__def("../../engine/sim/planner.js", function () {
+// Layout planner: spot search, belt routing (BFS) and pole chaining.
+// Used by the autonomous playtest bot (qa/) and the in-game auto-route tool.
+const { DX, DY, T_WATER, T_ROCK, entAt, frontTiles, footprint, canBuild, build } = __req("../../engine/sim/factory.js");
+
+function free(st, x, y) {
+  if (x < 0 || y < 0 || x >= st.W || y >= st.H) return false;
+  const i = y * st.W + x;
+  return !st.occ[i] && st.terrain[i] !== T_WATER && st.terrain[i] !== T_ROCK;
+}
+
+// tiles that something already outputs into; a belt there would get unwanted input
+function claimedTiles(st, except) {
+  const s = new Set();
+  for (const id of st.order) {
+    const e = st.ents.get(id);
+    if (e === except) continue;
+    if (e.type === "belt") s.add((e.y + DY[e.dir]) * st.W + e.x + DX[e.dir]);
+    else if (["drill", "smelter", "assembler"].includes(e.type)) for (const [x, y] of frontTiles(e)) s.add(y * st.W + x);
+  }
+  return s;
+}
+
+// Nearest top-left (x,y) to (cx,cy) where `type` fits and `ok(x,y)` holds.
+function findSpot(st, type, cx, cy, ok = () => true, maxR = 40, ignoreCost = true) {
+  for (let r = 0; r <= maxR; r++) {
+    let best = null, bd = 1e9;
+    for (let y = cy - r; y <= cy + r; y++) for (let x = cx - r; x <= cx + r; x++) {
+      if (Math.max(Math.abs(x - cx), Math.abs(y - cy)) !== r) continue;
+      if (!canBuild(st, type, x, y, ignoreCost) && ok(x, y)) {
+        const d = (x - cx) * (x - cx) + (y - cy) * (y - cy);
+        if (d < bd) { bd = d; best = [x, y]; }
+      }
+    }
+    if (best) return best;
+  }
+  return null;
+}
+
+function fullyOnOre(st, x, y, size, ore) {
+  for (let j = 0; j < size; j++) for (let i = 0; i < size; i++) if (st.ore[(y + j) * st.W + x + i] !== ore) return false;
+  return true;
+}
+
+// BFS belt path from the free tile `start` to any free tile adjacent to `target`.
+// Returns [{x,y,dir}] with the last belt pointing into the target, or null.
+function routeBelt(st, start, target, source = null) {
+  const W = st.W, claimed = claimedTiles(st, source);
+  const tset = new Set(footprint(st, target.type, target.x, target.y).map(([x, y]) => y * W + x));
+  const s0 = start[1] * W + start[0];
+  if (!free(st, start[0], start[1])) return null;
+  const prev = new Map([[s0, -1]]), q = [s0];
+  while (q.length) {
+    const c = q.shift(), cx = c % W, cy = (c - cx) / W;
+    for (let d = 0; d < 4; d++) {
+      const nx = cx + DX[d], ny = cy + DY[d], n = ny * W + nx;
+      if (nx < 0 || ny < 0 || nx >= W || ny >= st.H) continue;
+      if (tset.has(n)) {
+        const path = [];
+        let k = c, dir = d;
+        while (k !== -1) {
+          const kx = k % W, ky = (k - kx) / W;
+          path.unshift({ x: kx, y: ky, dir });
+          const p = prev.get(k);
+          if (p !== -1) { const px = p % W, py = (p - px) / W; dir = kx > px ? 0 : ky > py ? 1 : kx < px ? 2 : 3; }
+          k = p;
+        }
+        return path;
+      }
+      if (prev.has(n) || !free(st, nx, ny) || (claimed.has(n) && n !== s0)) continue;
+      prev.set(n, c); q.push(n);
+    }
+  }
+  return null;
+}
+
+function buildPath(st, path) {
+  for (const p of path) { const r = build(st, "belt", p.x, p.y, p.dir); if (!r.ok) return r; }
+  return { ok: true };
+}
+
+// Place poles from entity a to entity b, each within reach of the last.
+// Extend a's power network to b: start from the existing pole nearest to b
+// (or a itself) and add poles toward b, each within reach of the last.
+function poleChain(st, a, b, place = (x, y) => build(st, "pole", x, y).ok) {
+  const reach = st.content.BUILDINGS.pole.reach, sup = st.content.BUILDINGS.pole.supply;
+  const bc = [b.x + (b.size >> 1), b.y + (b.size >> 1)];
+  const covers = (px, py) => b.x - sup <= px && px <= b.x + b.size - 1 + sup && b.y - sup <= py && py <= b.y + b.size - 1 + sup;
+  const placed = [];
+  let cur = null, bd = 1e9;
+  for (const id of st.order) {
+    const e = st.ents.get(id);
+    if (e.type !== "pole" && e.type !== "hub") continue;
+    const p = e.type === "hub" ? [e.x + 1, e.y + 1] : [e.x, e.y];
+    if (e.type === "pole" && covers(p[0], p[1])) return placed;
+    const d = (p[0] - bc[0]) ** 2 + (p[1] - bc[1]) ** 2;
+    if (d < bd) { bd = d; cur = p; }
+  }
+  if (!cur || (a.type !== "hub" && bd > ((a.x - bc[0]) ** 2 + (a.y - bc[1]) ** 2) + reach * reach)) {
+    const ac = [a.x + (a.size >> 1), a.y + (a.size >> 1)];
+    cur = findSpot(st, "pole", ac[0], ac[1], (x, y) => Math.max(Math.abs(x - ac[0]), Math.abs(y - ac[1])) <= 2 + (a.size >> 1), 4);
+    if (!cur || !place(cur[0], cur[1])) return null;
+    placed.push(cur);
+  }
+  for (let guard = 0; guard < 30; guard++) {
+    if (covers(cur[0], cur[1]) && placed.length) return placed;
+    const dx = bc[0] - cur[0], dy = bc[1] - cur[1], len = Math.sqrt(dx * dx + dy * dy) || 1;
+    const stepL = Math.min(reach - 1, len);
+    const tx = Math.round(cur[0] + dx / len * stepL), ty = Math.round(cur[1] + dy / len * stepL);
+    const claimed = claimedTiles(st);
+    const ok = (x, y) => (x - cur[0]) ** 2 + (y - cur[1]) ** 2 <= reach * reach && !claimed.has(y * st.W + x);
+    // prefer a spot that already covers b, otherwise the nearest one toward it
+    const nxt = findSpot(st, "pole", tx, ty, (x, y) => ok(x, y) && (len > reach || covers(x, y)), 3) || findSpot(st, "pole", tx, ty, ok, 3);
+    if (!nxt) return null;
+    if (!place(nxt[0], nxt[1])) return null;
+    placed.push(nxt); cur = nxt;
+  }
+  return null;
+}
+
+function dirToward(fx, fy, tx, ty) {
+  const dx = tx - fx, dy = ty - fy;
+  if (Math.abs(dx) >= Math.abs(dy)) return dx >= 0 ? 0 : 2;
+  return dy >= 0 ? 1 : 3;
+}
+
+function patchCentre(st, ore, nearX, nearY) {
+  let best = null, bd = 1e9;
+  for (let y = 0; y < st.H - 1; y++) for (let x = 0; x < st.W - 1; x++) {
+    if (!fullyOnOre(st, x, y, 2, ore)) continue;
+    const d = (x - nearX) ** 2 + (y - nearY) ** 2;
+    if (d < bd) { bd = d; best = [x, y]; }
+  }
+  return best;
+}
+
+
+
+return { findSpot, fullyOnOre, routeBelt, buildPath, poleChain, dirToward, patchCentre, entAt };
+});
+__req("main.js");
+</script>

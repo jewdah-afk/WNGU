@@ -118,3 +118,10 @@ test("save/load round-trips to the same future state", async () => {
   run(st, 60); run(copy, 60);
   assert.equal(stateHash(copy), stateHash(st));
 });
+
+test("every surface pattern bakes on every primitive kind", async () => {
+  const { bake } = await import("../engine/pixel/raster.js");
+  const pats = ["rivets", "panel", "grille", "hazard", "stripes", "screw", "belt", "planks", "bricks", "noise", "water", "blades", undefined];
+  const prims = [{ box: [0.2, 0.2, 0, 0.8, 0.8, 0.5] }, { cyl: "z", c: [0.5, 0.5, 0.3], r: 0.3, h: 0.2 }, { gear: "x", c: [0.5, 0.5, 0.4], r: 0.3, rin: 0.2, h: 0.05, teeth: 8 }, { sphere: true, c: [0.5, 0.5, 0.3], r: 0.25 }];
+  for (const pat of pats) for (const pr of prims) assert.doesNotThrow(() => bake({ size: 1, height: 1, parts: [{ ...pr, mat: "steel", pat }] }), `${pat} on ${Object.keys(pr)[0]}`);
+});

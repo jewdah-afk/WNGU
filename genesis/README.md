@@ -16,10 +16,17 @@ npx http-server -p 8080 -c-1 .        # or any static server
 # lab:       http://localhost:8080/lab/index.html
 ```
 
+Published builds (private to you, share from the page's Share menu):
+[Factory Universe](https://claude.ai/artifact/NyKpFFbSRJiPVk399nwuy8) ·
+[Genome Lab](https://claude.ai/artifact/DYakR7zhwGCX8i8xBBfzMF). They are
+the single-file bundles in `dist/` (`npm run bundle`).
+
 Controls: `1`-`8` pick a building, click or drag to place (belts follow
 the drag), `R` rotate, right-click or `X` remove, `Esc` inspect mode,
 `T` research, `WASD` or middle-drag to pan, wheel to zoom, `P` pause.
-Speed buttons 1x/2x/4x sit next to the toolbar.
+Speed buttons 1x/2x/4x and zoom +/- sit next to the toolbar. On touch:
+tap a building, tap the map; drag with no tool selected to pan; use the
+Remove tool to delete. "Let the playtest bot build" fills an empty world.
 
 ## Verify it
 
@@ -29,7 +36,11 @@ Speed buttons 1x/2x/4x sit next to the toolbar.
 | `node qa/shoot.mjs` | Real Chromium: boot, key+click build, right-click remove, bot factory delivering, real-time sim, frame cost, inspector, research, belt close-up, lab; screenshots to `qa/out/` |
 | `node qa/visual-diff.mjs` | Every sprite re-baked and compared pixel for pixel with `qa/baselines/contact.png` |
 | `node qa/bench.mjs` | EXP-001 ablation + sim throughput -> `experiments/results/` |
+| `node qa/dist-check.mjs` | The bundled pages as the artifact host serves them, desktop and iPhone-13 touch |
 | `node tools/gen-roblox.mjs` | Regenerates the Roblox Content/AtlasData/Fixture modules and checks the JS replay |
+
+Known-good build: commit `b260911` passed the full suite (tag
+`known-good-2026-10-29` is local only; the git proxy refused tag pushes).
 
 ## Status (2026-10-29)
 

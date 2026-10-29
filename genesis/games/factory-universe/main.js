@@ -193,7 +193,7 @@ function draw(dt) {
   }
 
   // power coverage overlay while placing power-related things
-  if (ui.tool === "pole" || (ui.tool && C.BUILDINGS[ui.tool].power)) {
+  if (ui.tool === "pole" || (ui.tool && C.BUILDINGS[ui.tool] && C.BUILDINGS[ui.tool].power)) {
     g.globalAlpha = 0.16; g.fillStyle = "#5fd3e6";
     const sup = C.BUILDINGS.pole.supply;
     for (const id of st.order) {
@@ -272,7 +272,10 @@ function draw(dt) {
   drawParticles(g, ui.paused ? 0 : dt * ui.speed, ox, oy);
 
   // placement ghost
-  if (ui.tool && ui.hover) {
+  if (ui.tool === "remove" && ui.hover) {
+    const e = S.entAt(st, Math.floor(ui.hover[0]), Math.floor(ui.hover[1]));
+    if (e && e.type !== "hub") { g.globalAlpha = 0.4; g.fillStyle = "#ef5b5b"; diamond(g, e.x, e.y, e.size, ox, oy, true); g.globalAlpha = 1; }
+  } else if (ui.tool && ui.hover) {
     const s = C.BUILDINGS[ui.tool].size;
     const [tx, ty] = ghostTile();
     const why = S.canBuild(st, ui.tool, tx, ty);
@@ -366,14 +369,26 @@ function tryBuild(tx, ty) {
   return r;
 }
 view.addEventListener("contextmenu", e => e.preventDefault());
-view.addEventListener("mousedown", e => {
+function selectAt(x, y) {
+  const ent = S.entAt(st, Math.floor(x), Math.floor(y));
+  ui.selected = ent ? ent.id : null; renderInspector(); if (ent) sfx.play("click");
+}
+function removeAt(x, y) {
+  const r = S.remove(st, Math.floor(x), Math.floor(y));
+  if (r.ok && ui.selected && !st.ents.has(ui.selected)) { ui.selected = null; renderInspector(); }
+  return r;
+}
+view.addEventListener("pointerdown", e => {
   sfx.unlock();
+  view.setPointerCapture?.(e.pointerId);
   ui.hover = screenToWorld(e.clientX, e.clientY);
   if (e.button === 1 || (e.button === 0 && e.shiftKey)) { ui.pan = [e.clientX, e.clientY, cam.x, cam.y]; return; }
   if (e.button === 2) { ui.pan = [e.clientX, e.clientY, cam.x, cam.y, true]; return; }
+  if (ui.tool === "remove") { removeAt(ui.hover[0], ui.hover[1]); ui.drag = { remove: true }; return; }
   if (!ui.tool) {
-    const ent = S.entAt(st, Math.floor(ui.hover[0]), Math.floor(ui.hover[1]));
-    ui.selected = ent ? ent.id : null; renderInspector(); if (ent) sfx.play("click");
+    // touch: drag pans, a tap selects (decided on pointerup)
+    if (e.pointerType !== "mouse") { ui.pan = [e.clientX, e.clientY, cam.x, cam.y, "tap"]; return; }
+    selectAt(ui.hover[0], ui.hover[1]);
     return;
   }
   const [tx, ty] = ghostTile();
@@ -381,11 +396,12 @@ view.addEventListener("mousedown", e => {
   if (ui.tool === "belt") ui.drag = { x: tx, y: ty, id: r.ok ? r.id : null };
   else if (ui.tool === "pole") ui.drag = { pole: true, x: tx, y: ty };
 });
-addEventListener("mousemove", e => {
+addEventListener("pointermove", e => {
   ui.hover = screenToWorld(e.clientX, e.clientY);
+  if (ui.drag && ui.drag.remove) { removeAt(ui.hover[0], ui.hover[1]); return; }
   if (ui.pan) {
     const dx = e.clientX - ui.pan[0], dy = e.clientY - ui.pan[1];
-    if (Math.abs(dx) + Math.abs(dy) > 4) ui.pan[4] = false;
+    if (Math.abs(dx) + Math.abs(dy) > 6) ui.pan[4] = false;
     cam.x = ui.pan[2] - dx / cam.zoom; cam.y = ui.pan[3] - dy / cam.zoom;
   }
   if (ui.drag && ui.tool === "belt") {
@@ -404,11 +420,9 @@ addEventListener("mousemove", e => {
   }
   updateTip(e);
 });
-addEventListener("mouseup", e => {
-  if (ui.pan && ui.pan[4] && e.button === 2) {
-    const r = S.remove(st, Math.floor(ui.hover[0]), Math.floor(ui.hover[1]));
-    if (r.ok && ui.selected && !st.ents.has(ui.selected)) { ui.selected = null; renderInspector(); }
-  }
+addEventListener("pointerup", e => {
+  if (ui.pan && ui.pan[4] === true && e.button === 2) removeAt(ui.hover[0], ui.hover[1]);
+  if (ui.pan && ui.pan[4] === "tap") selectAt(ui.hover[0], ui.hover[1]);
   ui.pan = null; ui.drag = null;
 });
 view.addEventListener("wheel", e => {
@@ -470,17 +484,25 @@ function buildToolbar() {
     btn.className = "tool" + (ui.tool === k ? " on" : "") + (locked ? " locked" : "");
     btn.dataset.tool = k;
     btn.innerHTML = `<img class="px" src="${toolSrc(k)}" style="width:${k === "belt" || k === "pole" ? 34 : 56}px"><span class="k">${B.key}</span><span class="nm">${B.name}</span>`;
-    btn.onmouseenter = ev => showTip(ev, `<b>${B.name}</b><br>${costText(B.cost)}${B.power ? `<br>${B.power} kW` : ""}${B.output ? `<br>+${B.output} kW` : ""}${locked ? `<br><span style="color:var(--bad)">needs ${C.TECHS[B.tech].name}</span>` : ""}`);
-    btn.onmouseleave = hideTip;
+    btn.onpointerenter = ev => ev.pointerType === "mouse" && showTip(ev, `<b>${B.name}</b><br>${costText(B.cost)}${B.power ? `<br>${B.power} kW` : ""}${B.output ? `<br>+${B.output} kW` : ""}${locked ? `<br><span style="color:var(--bad)">needs ${C.TECHS[B.tech].name}</span>` : ""}`);
+    btn.onpointerleave = hideTip;
     btn.onclick = () => { if (!locked) selectTool(ui.tool === k ? null : k); };
     tb.appendChild(btn);
   }
+  const rm = document.createElement("button");
+  rm.className = "tool" + (ui.tool === "remove" ? " on" : ""); rm.dataset.tool = "remove";
+  rm.innerHTML = `<span class="k">X</span><span class="big">&times;</span><span class="nm">Remove</span>`;
+  rm.onclick = () => selectTool(ui.tool === "remove" ? null : "remove");
+  tb.appendChild(rm);
   const sp = document.createElement("div"); sp.id = "speed";
   for (const v of [1, 2, 4]) { const b = document.createElement("button"); b.textContent = v + "x"; b.className = ui.speed === v ? "on" : ""; b.onclick = () => { ui.speed = v; buildToolbar(); }; sp.appendChild(b); }
   tb.appendChild(sp);
+  const zm = document.createElement("div"); zm.id = "speed";
+  for (const [lbl, d] of [["+", 1], ["\u2212", -1]]) { const b = document.createElement("button"); b.textContent = lbl; b.setAttribute("aria-label", d > 0 ? "zoom in" : "zoom out"); b.onclick = () => { cam.zoom = Math.max(1, Math.min(6, cam.zoom + d)); }; zm.appendChild(b); }
+  tb.appendChild(zm);
 }
 function selectTool(t) {
-  if (t && !S.techUnlocked(st, C.BUILDINGS[t].tech)) { toast("needs " + C.TECHS[C.BUILDINGS[t].tech].name, "bad"); return; }
+  if (t && t !== "remove" && !S.techUnlocked(st, C.BUILDINGS[t].tech)) { toast("needs " + C.TECHS[C.BUILDINGS[t].tech].name, "bad"); return; }
   ui.tool = t; if (t) { ui.selected = null; renderInspector(); }
   document.querySelectorAll(".tool").forEach(b => b.classList.toggle("on", b.dataset.tool === t));
   view.style.cursor = t ? "none" : "crosshair";
@@ -508,7 +530,7 @@ function renderHUD() {
   } else { $("rs-txt").textContent = "none (T)"; $("rs-bar").style.width = "0"; }
   $("clock").textContent = `t+${Math.floor(st.tick / 3600)}m ${String(Math.floor(st.tick / 60) % 60).padStart(2, "0")}s · ${perf.fps} fps`;
   document.querySelectorAll(".tool").forEach(b => {
-    const B = C.BUILDINGS[b.dataset.tool]; if (!B) return;
+    const B = C.BUILDINGS[b.dataset.tool]; if (!B || !B.cost) return;
     b.classList.toggle("poor", Object.keys(B.cost).some(k => st.stock[k] < B.cost[k]));
   });
   if (ui.selected) renderInspector(true);
@@ -610,14 +632,7 @@ async function boot() {
   const hub = st.ents.get(1);
   centreOn(hub.x + 1.5, hub.y + 1.5);
   cam.zoom = innerWidth > 1400 ? 3 : 2;
-  if (params.has("bot")) {
-    const Bot = await import("../../qa/bot.mjs");
-    const a = Bot.starterFactory(st);
-    Bot.run(st, 120);
-    Bot.scienceBlock(st, a.gen);
-    Bot.run(st, +(params.get("bot") || 60));
-    st.events.length = 0;
-  }
+  if (params.has("bot") || location.hash === "#bot") await runBot(+(params.get("bot") || 60));
   if (params.has("zoom")) cam.zoom = +params.get("zoom");
   buildToolbar(); renderHUD();
   $("loading").remove();
@@ -625,6 +640,26 @@ async function boot() {
   requestAnimationFrame(frame);
   setInterval(renderHUD, 250);
 }
+// let the playtest bot build a starter factory in this world (same commands a player uses)
+async function runBot(extraSeconds = 60) {
+  const Bot = await import("../../qa/bot.mjs");
+  const a = Bot.starterFactory(st);
+  Bot.run(st, 120);
+  Bot.scienceBlock(st, a.gen);
+  Bot.run(st, extraSeconds);
+  st.events.length = 0;
+  buildToolbar();
+}
+$("bot-go").onclick = async () => {
+  if (st.order.length > 1) { toast("the bot needs an empty world: remove your buildings first", "bad"); return; }
+  $("bot-go").disabled = true; $("bot-go").textContent = "building…";
+  await new Promise(r => setTimeout(r, 30));
+  await runBot(30);
+  $("bot-go").textContent = "built";
+  if (innerWidth < 900) $("help").style.display = "none";
+  toast("bot built a starter factory: drills, smelters, gears, science", "good");
+};
+
 function frame(now) {
   const dt = simulate(now);
   panKeys(dt || 1 / 60);

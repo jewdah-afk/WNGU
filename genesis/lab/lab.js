@@ -94,8 +94,11 @@ function mutate(g) {
 function showMutants() {
   const bg = $("bg").value, o = opts();
   const box = $("mutants"); box.innerHTML = "";
-  for (let i = 0; i < 6; i++) {
-    const g = mutate(current), s = bake(g, o);
+  for (let made = 0, tries = 0; made < 6 && tries < 30; tries++) {
+    const g = mutate(current);
+    let s;
+    try { s = bake(g, o); } catch (e) { console.warn("mutant skipped:", e.message); continue; }
+    made++;
     const d = document.createElement("div"); d.className = "cell";
     const c = document.createElement("canvas"); paint(c, s, 2, bg); d.appendChild(c);
     d.insertAdjacentHTML("beforeend", `<small>contrast ${contrast(s, bg).toFixed(0)} · ${colours(s)} col</small>`);
@@ -127,9 +130,10 @@ $("save").onclick = () => {
   const cfg = { asset: currentName, genome: current, opts: opts(), bg: $("bg").value, zoom: +$("zoom").value };
   try { localStorage.setItem(KEY, JSON.stringify(cfg)); $("saved").textContent = "saved in this browser"; } catch (e) { $("saved").textContent = "storage unavailable"; }
 };
-$("export").onclick = () => {
-  const blob = new Blob([JSON.stringify({ asset: currentName, genome: current, opts: opts() }, null, 2)], { type: "application/json" });
-  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `genome-${currentName.replace(/:/g, "-")}.json`; a.click();
+$("export").onclick = async () => {
+  const text = JSON.stringify({ asset: currentName, genome: current, opts: opts() }, null, 2);
+  try { await navigator.clipboard.writeText(text); $("saved").textContent = "config JSON copied"; }
+  catch (e) { $("json").value = text; $("json").select(); $("saved").textContent = "copy blocked: the JSON is selected in the editor"; }
 };
 try {
   const cfg = JSON.parse(localStorage.getItem(KEY) || "null");

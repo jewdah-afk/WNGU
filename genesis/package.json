@@ -8,7 +8,8 @@
     "shoot": "node qa/shoot.mjs",
     "gen:luau": "node tools/gen-luau-content.mjs",
     "serve": "npx http-server -p 8080 -c-1 .",
-    "qa": "node --test qa/*.test.mjs && node qa/visual-diff.mjs && node qa/shoot.mjs",
-    "visual-diff": "node qa/visual-diff.mjs"
+    "qa": "node --test qa/*.test.mjs && node qa/visual-diff.mjs && node qa/shoot.mjs && npm run -s bundle && node qa/dist-check.mjs",
+    "visual-diff": "node qa/visual-diff.mjs",
+    "bundle": "node tools/bundle.mjs games/factory-universe/index.html dist/factory-universe.html && node tools/bundle.mjs lab/index.html dist/genome-lab.html"
   }
 }
