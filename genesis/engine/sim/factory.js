@@ -19,6 +19,18 @@ export function hash2(x, y, seed) {
   return h / PM; // [0,1)
 }
 
+// Arithmetic-only sin/cos: V8 and Luau may round the platform sine
+// differently in the last bit, which would fork world generation.
+const TWO_PI = 6.283185307179586;
+export function dsin(x) {
+  x = x - Math.floor(x / TWO_PI + 0.5) * TWO_PI;
+  const x2 = x * x;
+  let term = x, sum = x;
+  for (let n = 1; n <= 11; n++) { term = term * -x2 / ((2 * n) * (2 * n + 1)); sum = sum + term; }
+  return sum;
+}
+export function dcos(x) { return dsin(x + 1.5707963267948966); }
+
 function smooth(t) { return t * t * (3 - 2 * t); }
 
 export function valueNoise(x, y, cell, seed) {
@@ -75,12 +87,12 @@ function genTerrain(st) {
   const rnd = () => { s = pmNext(s); return s / PM; };
   const patches = [];
   for (let k = 0; k < 4; k++) {
-    const ang = (k + rnd() * 0.5) * Math.PI / 2;
-    patches.push({ ore: k + 1, x: cx + Math.cos(ang) * 11, y: cy + Math.sin(ang) * 11, r: 3.2 });
+    const ang = (k + rnd() * 0.5) * 3.141592653589793 / 2;
+    patches.push({ ore: k + 1, x: cx + dcos(ang) * 11, y: cy + dsin(ang) * 11, r: 3.2 });
   }
   for (let k = 0; k < 10; k++) {
-    const ang = rnd() * Math.PI * 2, dist = 17 + rnd() * 12;
-    patches.push({ ore: 1 + Math.floor(rnd() * 4), x: cx + Math.cos(ang) * dist, y: cy + Math.sin(ang) * dist, r: 2.6 + rnd() * 2.2 });
+    const ang = rnd() * TWO_PI, dist = 17 + rnd() * 12;
+    patches.push({ ore: 1 + Math.floor(rnd() * 4), x: cx + dcos(ang) * dist, y: cy + dsin(ang) * dist, r: 2.6 + rnd() * 2.2 });
   }
   for (const p of patches) {
     const r = Math.ceil(p.r + 2);
@@ -194,6 +206,7 @@ export function build(st, type, x, y, dir = 0) {
   const B = st.content.BUILDINGS[type];
   for (const k of Object.keys(B.cost)) st.stock[k] -= B.cost[k];
   const e = placeRaw(st, type, x, y, dir);
+  if (st.log) st.log.push([st.tick, "build", type, x, y, dir]);
   st.events.push({ k: "build", id: e.id, type, x, y });
   return { ok: true, id: e.id };
 }
@@ -202,6 +215,7 @@ export function remove(st, x, y) {
   const e = entAt(st, x, y);
   if (!e || e.type === "hub") return { ok: false, reason: "nothing removable" };
   const B = st.content.BUILDINGS[e.type];
+  if (st.log) st.log.push([st.tick, "remove", x, y]);
   for (const k of Object.keys(B.cost)) st.stock[k] += B.cost[k];
   // contents go back to the hub so nothing is lost
   const back = (it, n) => { st.stock[it] += n; };
@@ -218,11 +232,13 @@ export function remove(st, x, y) {
   return { ok: true };
 }
 
-export function rotate(st, x, y) {
+// rotate a quarter turn, or set an absolute direction when `dir` is given
+export function rotate(st, x, y, dir = -1) {
   const e = entAt(st, x, y);
   if (!e || e.type === "hub") return false;
-  e.dir = (e.dir + 1) % 4;
+  e.dir = dir >= 0 ? dir % 4 : (e.dir + 1) % 4;
   st.beltsDirty = true;
+  if (st.log) st.log.push([st.tick, "rotate", x, y, dir]);
   return true;
 }
 
@@ -230,6 +246,7 @@ export function setRecipe(st, id, recipe) {
   const e = st.ents.get(id), R = st.content.RECIPES[recipe];
   if (!e || e.type !== "assembler" || !R || R.machine !== "assembler" || !techUnlocked(st, R.tech)) return false;
   if (e.recipe === recipe) return true;
+  if (st.log) st.log.push([st.tick, "recipe", id, recipe]);
   for (const k of Object.keys(e.inb)) st.stock[k] += e.inb[k];
   for (const k of Object.keys(e.outb)) st.stock[k] += e.outb[k];
   e.inb = {}; e.outb = {}; e.progress = 0; e.recipe = recipe;
@@ -244,6 +261,7 @@ export function techAvailable(st, id) {
 
 export function setResearch(st, id) {
   if (id !== null && !techAvailable(st, id)) return false;
+  if (st.log) st.log.push([st.tick, "research", id]);
   if (st.tech.current !== id) st.tech.units = 0;
   st.tech.current = id;
   return true;
@@ -557,6 +575,19 @@ export function terrainHash(st) {
   let h = 7;
   for (let i = 0; i < st.W * st.H; i++) h = (h * 31 + st.terrain[i] * 7 + st.ore[i] * 3 + st.rich[i]) % M;
   return h;
+}
+
+// ---------- commands as data (network + replay) ----------
+// [name, ...args]; the only way players change the world, so a command log
+// plus the seed reproduces any session (multiplayer lockstep, parity tests).
+export function applyCommand(st, cmd) {
+  const [k, a, b, c, d] = cmd;
+  if (k === "build") return build(st, a, b, c, d);
+  if (k === "remove") return remove(st, a, b);
+  if (k === "rotate") return { ok: rotate(st, a, b, c ?? -1) };
+  if (k === "recipe") return { ok: setRecipe(st, a, b) };
+  if (k === "research") return { ok: setResearch(st, a) };
+  return { ok: false, reason: "unknown command" };
 }
 
 // ---------- save / load (JSON; terrain is regenerated from the seed) ----------

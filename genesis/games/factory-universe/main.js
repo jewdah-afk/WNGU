@@ -395,7 +395,7 @@ addEventListener("mousemove", e => {
     const ddx = tx - ui.drag.x, ddy = ty - ui.drag.y;
     const dir = Math.abs(ddx) >= Math.abs(ddy) ? (ddx > 0 ? 0 : 2) : (ddy > 0 ? 1 : 3);
     const prev = ui.drag.id && st.ents.get(ui.drag.id);
-    if (prev) { prev.dir = dir; st.beltsDirty = true; }
+    if (prev) S.rotate(st, prev.x, prev.y, dir);
     ui.dir = dir;
     const nx = ui.drag.x + S.DX[dir], ny = ui.drag.y + S.DY[dir];
     const r = S.build(st, "belt", nx, ny, dir);

@@ -1,0 +1,428 @@
+{
+  "id": "EXP-001",
+  "date": "2026-10-29",
+  "node": "v22.22.0",
+  "hypothesis": "Rendering compact part-list genomes with an analytic isometric ray caster, then quantising onto hue-shifted material ramps with selective outlines, yields coherent pixel-art sprites for every facing/state at interactive bake cost, from a representation far smaller than the sprite atlas it replaces.",
+  "variants": {
+    "A_raw": {
+      "quantize": false,
+      "dither": false,
+      "outline": false,
+      "shadows": false,
+      "groundShadow": false
+    },
+    "B_ramps": {
+      "quantize": true,
+      "dither": false,
+      "outline": false,
+      "shadows": false,
+      "groundShadow": false
+    },
+    "C_dither": {
+      "quantize": true,
+      "dither": true,
+      "outline": false,
+      "shadows": false,
+      "groundShadow": false
+    },
+    "D_outline": {
+      "quantize": true,
+      "dither": true,
+      "outline": true,
+      "shadows": false,
+      "groundShadow": false
+    },
+    "E_full": {
+      "quantize": true,
+      "dither": true,
+      "outline": true,
+      "shadows": true,
+      "groundShadow": true
+    },
+    "F_noDither": {
+      "quantize": true,
+      "dither": false,
+      "outline": true,
+      "shadows": true,
+      "groundShadow": true
+    }
+  },
+  "results": {
+    "drill": {
+      "A_raw": {
+        "bakeMs": 4.45,
+        "colors": 64,
+        "opaque": 1695,
+        "hfNoise": 80.08,
+        "silhouetteContrast": 56.8,
+        "w": 72,
+        "h": 74
+      },
+      "B_ramps": {
+        "bakeMs": 3.78,
+        "colors": 23,
+        "opaque": 1695,
+        "hfNoise": 82.29,
+        "silhouetteContrast": 57.8,
+        "w": 72,
+        "h": 74
+      },
+      "C_dither": {
+        "bakeMs": 3.94,
+        "colors": 23,
+        "opaque": 1695,
+        "hfNoise": 84.13,
+        "silhouetteContrast": 57.8,
+        "w": 72,
+        "h": 74
+      },
+      "D_outline": {
+        "bakeMs": 4.75,
+        "colors": 30,
+        "opaque": 1695,
+        "hfNoise": 95.42,
+        "silhouetteContrast": 111.8,
+        "w": 72,
+        "h": 74
+      },
+      "E_full": {
+        "bakeMs": 5.64,
+        "colors": 31,
+        "opaque": 1695,
+        "hfNoise": 92.9,
+        "silhouetteContrast": 111.8,
+        "w": 72,
+        "h": 74
+      },
+      "F_noDither": {
+        "bakeMs": 3.86,
+        "colors": 31,
+        "opaque": 1695,
+        "hfNoise": 88.88,
+        "silhouetteContrast": 111.8,
+        "w": 72,
+        "h": 74
+      }
+    },
+    "smelter": {
+      "A_raw": {
+        "bakeMs": 4.7,
+        "colors": 58,
+        "opaque": 2234,
+        "hfNoise": 93.39,
+        "silhouetteContrast": 36,
+        "w": 76,
+        "h": 85
+      },
+      "B_ramps": {
+        "bakeMs": 2.41,
+        "colors": 25,
+        "opaque": 2234,
+        "hfNoise": 94.51,
+        "silhouetteContrast": 36.2,
+        "w": 76,
+        "h": 85
+      },
+      "C_dither": {
+        "bakeMs": 2.87,
+        "colors": 27,
+        "opaque": 2234,
+        "hfNoise": 95.95,
+        "silhouetteContrast": 36.2,
+        "w": 76,
+        "h": 85
+      },
+      "D_outline": {
+        "bakeMs": 3.02,
+        "colors": 31,
+        "opaque": 2234,
+        "hfNoise": 103.23,
+        "silhouetteContrast": 110.1,
+        "w": 76,
+        "h": 85
+      },
+      "E_full": {
+        "bakeMs": 3.9,
+        "colors": 31,
+        "opaque": 2234,
+        "hfNoise": 99.71,
+        "silhouetteContrast": 110.1,
+        "w": 76,
+        "h": 85
+      },
+      "F_noDither": {
+        "bakeMs": 3.71,
+        "colors": 29,
+        "opaque": 2234,
+        "hfNoise": 97.26,
+        "silhouetteContrast": 110.1,
+        "w": 76,
+        "h": 85
+      }
+    },
+    "assembler": {
+      "A_raw": {
+        "bakeMs": 4.55,
+        "colors": 47,
+        "opaque": 1689,
+        "hfNoise": 89.12,
+        "silhouetteContrast": 67.5,
+        "w": 71,
+        "h": 70
+      },
+      "B_ramps": {
+        "bakeMs": 2.3,
+        "colors": 24,
+        "opaque": 1689,
+        "hfNoise": 91.82,
+        "silhouetteContrast": 69.6,
+        "w": 71,
+        "h": 70
+      },
+      "C_dither": {
+        "bakeMs": 2.51,
+        "colors": 27,
+        "opaque": 1689,
+        "hfNoise": 92.45,
+        "silhouetteContrast": 69.6,
+        "w": 71,
+        "h": 70
+      },
+      "D_outline": {
+        "bakeMs": 2.62,
+        "colors": 33,
+        "opaque": 1689,
+        "hfNoise": 104.58,
+        "silhouetteContrast": 108.8,
+        "w": 71,
+        "h": 70
+      },
+      "E_full": {
+        "bakeMs": 3.6,
+        "colors": 33,
+        "opaque": 1689,
+        "hfNoise": 96.01,
+        "silhouetteContrast": 108.8,
+        "w": 71,
+        "h": 70
+      },
+      "F_noDither": {
+        "bakeMs": 3.68,
+        "colors": 31,
+        "opaque": 1689,
+        "hfNoise": 95.47,
+        "silhouetteContrast": 108.8,
+        "w": 71,
+        "h": 70
+      }
+    },
+    "generator": {
+      "A_raw": {
+        "bakeMs": 5.1,
+        "colors": 118,
+        "opaque": 1619,
+        "hfNoise": 77.87,
+        "silhouetteContrast": 48.8,
+        "w": 100,
+        "h": 91
+      },
+      "B_ramps": {
+        "bakeMs": 4.75,
+        "colors": 20,
+        "opaque": 1619,
+        "hfNoise": 85.06,
+        "silhouetteContrast": 50.4,
+        "w": 100,
+        "h": 91
+      },
+      "C_dither": {
+        "bakeMs": 4.94,
+        "colors": 21,
+        "opaque": 1619,
+        "hfNoise": 85.14,
+        "silhouetteContrast": 50,
+        "w": 100,
+        "h": 91
+      },
+      "D_outline": {
+        "bakeMs": 5.23,
+        "colors": 25,
+        "opaque": 1619,
+        "hfNoise": 96.28,
+        "silhouetteContrast": 111.3,
+        "w": 100,
+        "h": 91
+      },
+      "E_full": {
+        "bakeMs": 6.08,
+        "colors": 26,
+        "opaque": 1619,
+        "hfNoise": 92.67,
+        "silhouetteContrast": 111.3,
+        "w": 100,
+        "h": 91
+      },
+      "F_noDither": {
+        "bakeMs": 5.39,
+        "colors": 25,
+        "opaque": 1619,
+        "hfNoise": 89.97,
+        "silhouetteContrast": 111.3,
+        "w": 100,
+        "h": 91
+      }
+    },
+    "lab": {
+      "A_raw": {
+        "bakeMs": 1.64,
+        "colors": 331,
+        "opaque": 1391,
+        "hfNoise": 50.77,
+        "silhouetteContrast": 55.8,
+        "w": 70,
+        "h": 73
+      },
+      "B_ramps": {
+        "bakeMs": 1.46,
+        "colors": 20,
+        "opaque": 1391,
+        "hfNoise": 58.56,
+        "silhouetteContrast": 56.6,
+        "w": 70,
+        "h": 73
+      },
+      "C_dither": {
+        "bakeMs": 1.41,
+        "colors": 20,
+        "opaque": 1391,
+        "hfNoise": 68.32,
+        "silhouetteContrast": 56.8,
+        "w": 70,
+        "h": 73
+      },
+      "D_outline": {
+        "bakeMs": 1.54,
+        "colors": 25,
+        "opaque": 1391,
+        "hfNoise": 81.29,
+        "silhouetteContrast": 108.8,
+        "w": 70,
+        "h": 73
+      },
+      "E_full": {
+        "bakeMs": 2.24,
+        "colors": 27,
+        "opaque": 1391,
+        "hfNoise": 78.43,
+        "silhouetteContrast": 108.8,
+        "w": 70,
+        "h": 73
+      },
+      "F_noDither": {
+        "bakeMs": 2.18,
+        "colors": 27,
+        "opaque": 1391,
+        "hfNoise": 69.39,
+        "silhouetteContrast": 108.8,
+        "w": 70,
+        "h": 73
+      }
+    },
+    "hub": {
+      "A_raw": {
+        "bakeMs": 4.58,
+        "colors": 100,
+        "opaque": 3625,
+        "hfNoise": 70.23,
+        "silhouetteContrast": 51.7,
+        "w": 100,
+        "h": 107
+      },
+      "B_ramps": {
+        "bakeMs": 4.62,
+        "colors": 23,
+        "opaque": 3625,
+        "hfNoise": 72.78,
+        "silhouetteContrast": 53,
+        "w": 100,
+        "h": 107
+      },
+      "C_dither": {
+        "bakeMs": 4.59,
+        "colors": 24,
+        "opaque": 3625,
+        "hfNoise": 74.1,
+        "silhouetteContrast": 52.9,
+        "w": 100,
+        "h": 107
+      },
+      "D_outline": {
+        "bakeMs": 5.11,
+        "colors": 33,
+        "opaque": 3625,
+        "hfNoise": 82.6,
+        "silhouetteContrast": 109.2,
+        "w": 100,
+        "h": 107
+      },
+      "E_full": {
+        "bakeMs": 6.89,
+        "colors": 34,
+        "opaque": 3625,
+        "hfNoise": 76.97,
+        "silhouetteContrast": 109.2,
+        "w": 100,
+        "h": 107
+      },
+      "F_noDither": {
+        "bakeMs": 8,
+        "colors": 33,
+        "opaque": 3625,
+        "hfNoise": 75.37,
+        "silhouetteContrast": 109.2,
+        "w": 100,
+        "h": 107
+      }
+    }
+  },
+  "compactness": {
+    "perMachine": {
+      "drill": {
+        "genomeBytes": 738,
+        "genomeGzip": 316,
+        "atlasPngBytes": 36910,
+        "frames": 36
+      },
+      "smelter": {
+        "genomeBytes": 679,
+        "genomeGzip": 297,
+        "atlasPngBytes": 46762,
+        "frames": 36
+      },
+      "assembler": {
+        "genomeBytes": 856,
+        "genomeGzip": 364,
+        "atlasPngBytes": 30974,
+        "frames": 36
+      },
+      "generator": {
+        "genomeBytes": 820,
+        "genomeGzip": 337,
+        "atlasPngBytes": 44827,
+        "frames": 36
+      },
+      "lab": {
+        "genomeBytes": 492,
+        "genomeGzip": 247,
+        "atlasPngBytes": 33248,
+        "frames": 36
+      }
+    },
+    "genomeBytes": 3585,
+    "atlasPngBytes": 192721,
+    "ratio": 53.8,
+    "frames": 180,
+    "atlasBakeMs": 778,
+    "msPerFrame": 4.32
+  }
+}

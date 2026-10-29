@@ -1,0 +1,9 @@
+{
+  "entities": 1641,
+  "belts": 1560,
+  "machines": 80,
+  "itemsOnBelts": 1560,
+  "msPerTick": 0.07,
+  "budgetAt60Hz": "16.67 ms",
+  "headroom": 238.1
+}
