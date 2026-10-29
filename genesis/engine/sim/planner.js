@@ -79,22 +79,37 @@ export function buildPath(st, path) {
 }
 
 // Place poles from entity a to entity b, each within reach of the last.
+// Extend a's power network to b: start from the existing pole nearest to b
+// (or a itself) and add poles toward b, each within reach of the last.
 export function poleChain(st, a, b, place = (x, y) => build(st, "pole", x, y).ok) {
-  const reach = st.content.BUILDINGS.pole.reach;
-  const ac = [a.x + (a.size >> 1), a.y + (a.size >> 1)], bc = [b.x + (b.size >> 1), b.y + (b.size >> 1)];
+  const reach = st.content.BUILDINGS.pole.reach, sup = st.content.BUILDINGS.pole.supply;
+  const bc = [b.x + (b.size >> 1), b.y + (b.size >> 1)];
+  const covers = (px, py) => b.x - sup <= px && px <= b.x + b.size - 1 + sup && b.y - sup <= py && py <= b.y + b.size - 1 + sup;
   const placed = [];
-  let cur = findSpot(st, "pole", ac[0], ac[1], (x, y) => Math.max(Math.abs(x - ac[0]), Math.abs(y - ac[1])) <= 2 + (a.size >> 1), 4);
-  if (!cur) return null;
-  if (!place(cur[0], cur[1])) return null;
-  placed.push(cur);
+  let cur = null, bd = 1e9;
+  for (const id of st.order) {
+    const e = st.ents.get(id);
+    if (e.type !== "pole" && e.type !== "hub") continue;
+    const p = e.type === "hub" ? [e.x + 1, e.y + 1] : [e.x, e.y];
+    if (e.type === "pole" && covers(p[0], p[1])) return placed;
+    const d = (p[0] - bc[0]) ** 2 + (p[1] - bc[1]) ** 2;
+    if (d < bd) { bd = d; cur = p; }
+  }
+  if (!cur || (a.type !== "hub" && bd > ((a.x - bc[0]) ** 2 + (a.y - bc[1]) ** 2) + reach * reach)) {
+    const ac = [a.x + (a.size >> 1), a.y + (a.size >> 1)];
+    cur = findSpot(st, "pole", ac[0], ac[1], (x, y) => Math.max(Math.abs(x - ac[0]), Math.abs(y - ac[1])) <= 2 + (a.size >> 1), 4);
+    if (!cur || !place(cur[0], cur[1])) return null;
+    placed.push(cur);
+  }
   for (let guard = 0; guard < 30; guard++) {
-    const sup = st.content.BUILDINGS.pole.supply;
-    const near = b.x - sup <= cur[0] && cur[0] <= b.x + b.size - 1 + sup && b.y - sup <= cur[1] && cur[1] <= b.y + b.size - 1 + sup;
-    if (near) return placed;
-    const dx = bc[0] - cur[0], dy = bc[1] - cur[1], len = Math.sqrt(dx * dx + dy * dy);
+    if (covers(cur[0], cur[1]) && placed.length) return placed;
+    const dx = bc[0] - cur[0], dy = bc[1] - cur[1], len = Math.sqrt(dx * dx + dy * dy) || 1;
     const stepL = Math.min(reach - 1, len);
     const tx = Math.round(cur[0] + dx / len * stepL), ty = Math.round(cur[1] + dy / len * stepL);
-    const nxt = findSpot(st, "pole", tx, ty, (x, y) => (x - cur[0]) ** 2 + (y - cur[1]) ** 2 <= reach * reach && !claimedTiles(st).has(y * st.W + x), 3);
+    const claimed = claimedTiles(st);
+    const ok = (x, y) => (x - cur[0]) ** 2 + (y - cur[1]) ** 2 <= reach * reach && !claimed.has(y * st.W + x);
+    // prefer a spot that already covers b, otherwise the nearest one toward it
+    const nxt = findSpot(st, "pole", tx, ty, (x, y) => ok(x, y) && (len > reach || covers(x, y)), 3) || findSpot(st, "pole", tx, ty, ok, 3);
     if (!nxt) return null;
     if (!place(nxt[0], nxt[1])) return null;
     placed.push(nxt); cur = nxt;

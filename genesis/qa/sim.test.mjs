@@ -109,3 +109,12 @@ test("research consumes packs and raises level; belt speed follows", () => {
   assert.equal(st.events.some(e => e.k === "research"), true);
   assert.equal(beltSpeed(st), C.BELT.baseSpeed + C.BELT.speedPerLevel);
 });
+
+test("save/load round-trips to the same future state", async () => {
+  const { serialize, deserialize } = await import("../engine/sim/factory.js");
+  const st = createWorld(C, { seed: 2 });
+  const a = starterFactory(st); run(st, 90); scienceBlock(st, a.gen); run(st, 30);
+  const copy = deserialize(C, serialize(st));
+  run(st, 60); run(copy, 60);
+  assert.equal(stateHash(copy), stateHash(st));
+});

@@ -558,3 +558,29 @@ export function terrainHash(st) {
   for (let i = 0; i < st.W * st.H; i++) h = (h * 31 + st.terrain[i] * 7 + st.ore[i] * 3 + st.rich[i]) % M;
   return h;
 }
+
+// ---------- save / load (JSON; terrain is regenerated from the seed) ----------
+export function serialize(st) {
+  const ents = st.order.map(id => {
+    const e = st.ents.get(id);
+    const o = { id: e.id, type: e.type, x: e.x, y: e.y, dir: e.dir };
+    for (const k of ["items", "recipe", "inb", "outb", "progress", "alt", "out", "fuel", "energy", "wantsWork", "load"]) if (e[k] !== undefined) o[k] = e[k];
+    return o;
+  });
+  return JSON.stringify({ v: 1, seed: st.seed, W: st.W, H: st.H, tick: st.tick, nextId: st.nextId, ents, stock: st.stock, delivered: st.delivered, produced: st.produced, tech: st.tech });
+}
+
+export function deserialize(content, json) {
+  const d = typeof json === "string" ? JSON.parse(json) : json;
+  const st = createWorld(content, { W: d.W, H: d.H, seed: d.seed });
+  st.occ.fill(0); st.ents.clear(); st.order.length = 0;
+  for (const o of d.ents) {
+    st.nextId = o.id;
+    const e = placeRaw(st, o.type, o.x, o.y, o.dir);
+    for (const k of Object.keys(o)) if (!["id", "type", "x", "y", "dir"].includes(k)) e[k] = o[k];
+  }
+  st.nextId = d.nextId; st.tick = d.tick;
+  Object.assign(st.stock, d.stock); Object.assign(st.delivered, d.delivered); Object.assign(st.produced, d.produced);
+  st.tech = d.tech;
+  return st;
+}
