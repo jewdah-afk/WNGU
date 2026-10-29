@@ -121,6 +121,14 @@ await page.evaluate(() => { const fu = window.__fu; fu.cam.zoom = 1; fu.centreOn
 await page.waitForTimeout(400);
 await shot("06-overview-zoom1");
 
+// 7. the genome lab
+await page.goto(base.replace("games/factory-universe/index.html", "lab/index.html"));
+await page.waitForFunction(() => window.__lab && document.querySelectorAll("#mutants canvas").length === 6, null, { timeout: 30000 });
+await page.click("#mutate");
+await page.waitForTimeout(500);
+check("lab renders genome, ablation and 6 mutants", await page.evaluate(() => document.querySelectorAll("#ablation canvas").length === 6 && document.querySelectorAll("#mutants canvas").length === 6));
+await shot("08-genome-lab");
+
 check("no console errors during session", report.errors.length === 0, report.errors.slice(0, 5).join(" | "));
 fs.writeFileSync(path.join(OUT, "report.json"), JSON.stringify(report, null, 2));
 await browser.close(); srv.close();

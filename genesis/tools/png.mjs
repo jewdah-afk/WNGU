@@ -32,3 +32,17 @@ export class Surface {
   }
   png() { return encodePNG(this.w, this.h, this.px); }
 }
+
+// Decoder for PNGs written by encodePNG above (8-bit RGBA, filter 0 only).
+export function decodePNG(buf) {
+  let p = 8, w = 0, h = 0; const idat = [];
+  while (p < buf.length) {
+    const len = buf.readUInt32BE(p), type = buf.toString("ascii", p + 4, p + 8), data = buf.subarray(p + 8, p + 8 + len);
+    if (type === "IHDR") { w = data.readUInt32BE(0); h = data.readUInt32BE(4); if (data[8] !== 8 || data[9] !== 6) throw new Error("only RGBA8"); }
+    else if (type === "IDAT") idat.push(data);
+    p += 12 + len;
+  }
+  const raw = zlib.inflateSync(Buffer.concat(idat)), px = new Uint8ClampedArray(w * h * 4);
+  for (let y = 0; y < h; y++) { if (raw[y * (w * 4 + 1)] !== 0) throw new Error("unsupported filter"); px.set(raw.subarray(y * (w * 4 + 1) + 1, (y + 1) * (w * 4 + 1)), y * w * 4); }
+  return { w, h, px };
+}

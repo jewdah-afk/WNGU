@@ -422,3 +422,7 @@ render();
 </script>
 </body>
 </html>
+
+## Genesis
+
+`genesis/` holds the Genesis game-generation workbench and its first game, Factory Universe. Start with `genesis/README.md`.

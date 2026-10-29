@@ -7,6 +7,8 @@
     "bench": "node qa/bench.mjs",
     "shoot": "node qa/shoot.mjs",
     "gen:luau": "node tools/gen-luau-content.mjs",
-    "serve": "npx http-server -p 8080 -c-1 ."
+    "serve": "npx http-server -p 8080 -c-1 .",
+    "qa": "node --test qa/*.test.mjs && node qa/visual-diff.mjs && node qa/shoot.mjs",
+    "visual-diff": "node qa/visual-diff.mjs"
   }
 }

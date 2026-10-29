@@ -1,0 +1,59 @@
+{
+  "experiments": [
+    {
+      "id": "EXP-001", "title": "Genome ray-cast rasterizer: stage ablation", "status": "verified",
+      "doc": "EXP-001-genome-raster.md", "results": ["results/exp001.json", "results/exp001-sheet.png"],
+      "verdict": "Adopted. Ramps + selective outline are the high-value stages; dither is mixed (per-material switch is the next test)."
+    },
+    {
+      "id": "EXP-002", "title": "Belt update order", "status": "verified",
+      "hypothesis": "Updating belt tiles in entity-id order (upstream first for player-built lines) loses throughput because the downstream tile has not yet moved when the upstream one tries to insert.",
+      "method": "qa/sim.test.mjs 'basic belt carries 7.5 items/s': 26-tile line, saturated feed, 20 s window.",
+      "results": { "id_order_items_per_s": 6.7, "downstream_first_items_per_s": 7.5, "factorio_reference": 7.5 },
+      "verdict": "Adopted downstream-first ordering (sorted by distance to chain end, then id). Matches the Factorio one-lane figure."
+    },
+    {
+      "id": "EXP-003", "title": "Arithmetic-only trig for cross-runtime determinism", "status": "partially verified",
+      "hypothesis": "Replacing Math.sin/cos with an 11-term Taylor series (after range reduction) removes the only platform-library dependence in world generation.",
+      "results": { "max_abs_error_vs_native": 1.68e-13, "terrain_hash_unchanged": true, "js_replay_matches_recording": true },
+      "pending": "Luau side: run `lune run tests/parity` in games/factory-universe/roblox (Lune could not be installed in the build container).",
+      "verdict": "Adopted."
+    },
+    {
+      "id": "EXP-004", "title": "Sprite delivery to Roblox: runtime bake vs pre-baked palette RLE", "status": "partially verified",
+      "hypothesis": "Interpreted Luau is too slow to bake 180+ frames at join; shipping palette + RLE sprites as a generated module is small enough to be practical.",
+      "results": { "sprites": 181, "module_source_kb": 321, "frames_per_machine": 17, "js_bake_ms_per_frame": 4.3 },
+      "pending": "Measure Atlas.load() and terrain bake time on a phone and in Studio (printed in the perf line).",
+      "verdict": "Adopted provisionally."
+    },
+    {
+      "id": "EXP-005", "title": "Lockstep command relay instead of state replication", "status": "implemented, unexecuted",
+      "hypothesis": "Because stateHash is deterministic, broadcasting stamped commands (bytes per action) replaces replicating thousands of belt items (bytes per tick).",
+      "pending": "Two-client Studio test: desync counter stays 0 for 30 minutes; measure bandwidth.",
+      "verdict": "Pending Studio run."
+    },
+    {
+      "id": "FAIL-001", "title": "All-pairs pole wires", "status": "rejected",
+      "finding": "Drawing a wire for every pole pair within reach produced an unreadable tangle in the first bot-built factory screenshot (qa shot 03). Replaced with a per-network minimum spanning tree; the planner now extends from the nearest existing pole (12 poles in the seed-1 bot layout; the pre-fix count was not recorded)."
+    },
+    {
+      "id": "FAIL-002", "title": "Outlined terrain tiles", "status": "rejected",
+      "finding": "Running the selective outline on ground tiles drew a dark grid over the whole map. Terrain now bakes without outlines; only rock keeps them."
+    },
+    {
+      "id": "FAIL-003", "title": "Hazard-yellow belt chevrons", "status": "rejected",
+      "finding": "Bright chevrons competed with items for attention in the zoom-6 close-up (qa shot 07), against the Shapez principle that belts stay quiet so items read. Switched to steel chevrons and 1.9x item scale."
+    },
+    {
+      "id": "FAIL-004", "title": "No bootstrap power source", "status": "rejected",
+      "finding": "The playtest bot deadlocked: the coal drill needs power to mine the coal the generator needs. Fixed by making the Core Hub a 150 kW pole (also gives new players a working first network)."
+    }
+  ],
+  "backlog": [
+    { "id": "EXP-006", "title": "Per-material dither switch", "class": "experimental", "plan": "Dither only curved/glass materials; re-run EXP-001 metrics and visual review." },
+    { "id": "EXP-007", "title": "Black-box genome fitting", "class": "experimental", "plan": "CMA-ES or (1+λ) search over genome parameters to match a target silhouette/colour histogram, using bake() as the renderer; compare with the human-in-the-loop lab." },
+    { "id": "EXP-008", "title": "Belt-segment aggregation (hybrid sim)", "class": "established elsewhere (Factorio transport-line merging)", "plan": "Treat straight saturated runs as one queue with an offset; target 10x items at equal ms/tick; must keep stateHash semantics." },
+    { "id": "EXP-009", "title": "Neural cellular automata for material textures", "class": "established research (Mordvintsev et al. 2020), unverified for this use", "plan": "Train a small NCA offline to grow rust/heat textures; bake to ramp indices; compare against the current pattern functions." },
+    { "id": "EXP-010", "title": "Lit normal sprites for dynamic lighting", "class": "established (normal-mapped 2D lighting)", "plan": "Bake a normal/height buffer alongside colour from the same rays; relight at runtime for day/night and furnace glow." }
+  ]
+}
