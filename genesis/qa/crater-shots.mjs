@@ -1,0 +1,53 @@
+// Visual + perf QA for Crater Run: autopilot runs, biome jumps, night, TNT.
+import fs from "node:fs";
+import path from "node:path";
+import { createRequire } from "node:module";
+const require = createRequire(import.meta.url);
+const { chromium, devices } = require("playwright");
+const OUT = "qa/out/crater"; fs.mkdirSync(OUT, { recursive: true });
+const src = "games/crater-run/index.html";
+const wrapped = path.resolve(OUT, "wrapped.html");
+fs.writeFileSync(wrapped, `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"></head><body>${fs.readFileSync(src, "utf8")}</body></html>`);
+let fails = 0; const check = (n, ok, d = "") => { console.log(`${ok ? "PASS" : "FAIL"} ${n} ${d}`); if (!ok) fails++; };
+const browser = await chromium.launch();
+const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+const errs = []; page.on("pageerror", e => errs.push(String(e))); page.on("console", m => m.type() === "error" && !m.text().includes("fonts") && errs.push(m.text()));
+await page.goto("file://" + wrapped);
+await page.waitForTimeout(1500);
+await page.screenshot({ path: `${OUT}/00-menu.png` });
+await page.evaluate(() => { window.__cr.startRun(); window.__cr.setAuto(true); });
+await page.waitForTimeout(9000);
+const r1 = await page.evaluate(() => ({ x: window.__cr.car.x, dug: window.__cr.stats.dug, state: window.__cr.state, ...window.__cr.perf() }));
+check("autopilot drives forward", r1.x > 600, JSON.stringify(r1));
+await page.screenshot({ path: `${OUT}/01-meadow-drive.png` });
+const spots = [["02-desert", 3300], ["03-tundra", 5000], ["04-volcano", 6700], ["05-canyon", 8400]];
+for (const [name, x] of spots) {
+  await page.evaluate(x => window.__cr.jumpTo(x), x);
+  await page.waitForTimeout(3500);
+  await page.screenshot({ path: `${OUT}/${name}.png` });
+}
+await page.evaluate(() => { window.__cr.jumpTo(2400); window.__cr.setTime(70); });
+await page.waitForTimeout(2500);
+await page.evaluate(() => window.__cr.setAuto(false));
+await page.waitForTimeout(1200);
+await page.screenshot({ path: `${OUT}/06-night-headlights.png` });
+await page.evaluate(() => { const c = window.__cr.car, x = c.x + 75; window.__cr.explode(x, window.__cr.surfaceY(x) + 4, 22); });
+await page.waitForTimeout(250);
+await page.screenshot({ path: `${OUT}/07-explosion.png` });
+await page.waitForTimeout(1200);
+await page.screenshot({ path: `${OUT}/08-crater-after.png` });
+const perf = await page.evaluate(() => window.__cr.perf());
+check("frame budget (sim+render < 16 ms)", perf.simMs + perf.renderMs < 16, JSON.stringify(perf));
+check("no errors", errs.length === 0, errs.slice(0, 3).join(" | "));
+const ph = await (await browser.newContext(devices["iPhone 13"])).newPage();
+ph.on("pageerror", e => errs.push(String(e)));
+await ph.goto("file://" + wrapped); await ph.waitForTimeout(800);
+await ph.locator("#go").tap(); await ph.waitForTimeout(400);
+const box = await ph.locator("#gas").boundingBox();
+check("phone shows touch pads", !!box);
+if (box) { await ph.touchscreen.tap(box.x + 40, box.y + 40); }
+await ph.evaluate(() => window.__cr.setAuto(true)); await ph.waitForTimeout(4000);
+await ph.screenshot({ path: `${OUT}/09-phone.png` });
+check("phone no errors", errs.length === 0, errs.slice(0, 3).join(" | "));
+await browser.close();
+process.exit(fails ? 1 : 0);
